@@ -1,12 +1,27 @@
 :root {
-    --primary: #1f2937;
-    --secondary: #374151;
-    --bg: #f3f4f6;
-    --card: #ffffff;
-    --border: #e5e7eb;
-    --accent: #2563eb;
+    --primary: #0f172a;
+    --secondary: #1e293b;
+    --bg: #020617;
+    --card: #0f172a;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #22d3ee;
     --success: #16a34a;
     --danger: #dc2626;
+    --text-main: #f8fafc;
+    --text-muted: #9ca3af;
+    --card-radius: 14px;
+    --field-radius: 8px;
+
+    /* Bootstrap variable overrides */
+    --bs-body-bg: var(--bg);
+    --bs-body-color: var(--text-main);
+    --bs-border-color: var(--border);
+    --bs-primary: var(--accent);
+    --bs-secondary-color: var(--text-muted);
+    --bs-card-bg: var(--card);
+    --bs-card-border-color: var(--border);
+    --bs-border-radius: var(--field-radius);
+    --bs-border-radius-lg: var(--card-radius);
 }
 
 * {
@@ -17,7 +32,7 @@ body {
     margin: 0;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     background-color: var(--bg);
-    color: #111827;
+    color: var(--text-main);
 }
 
 .auth-body {
@@ -252,6 +267,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    background: radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 35%), var(--bg);
 }
 
 /* Topbar */
@@ -263,6 +279,8 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
+    box-shadow: 0 10px 25px -15px rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
 }
 
 .topbar-left {
@@ -277,7 +295,7 @@ body {
 
     .topbar-right .user {
         font-size: 14px;
-        color: #374151;
+        color: var(--text-muted);
     }
 
 .logout {
@@ -307,8 +325,9 @@ body {
 .card {
     background-color: var(--card);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px;
+    border-radius: var(--card-radius);
+    padding: 24px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 
@@ -328,19 +347,20 @@ body {
 .kpi-card {
     background-color: var(--card);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
+    border-radius: var(--card-radius);
+    padding: 24px;
     display: flex;
     align-items: center;
     gap: 16px;
     text-decoration: none;
     color: inherit;
     transition: transform .15s ease, box-shadow .15s ease;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.28);
 }
 
     .kpi-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        box-shadow: 0 18px 35px -10px rgba(34, 211, 238, 0.35);
     }
 
 .kpi-icon {
@@ -350,7 +370,7 @@ body {
 
 .kpi-title {
     font-size: 14px;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 .kpi-value {
@@ -376,6 +396,7 @@ body {
 .card h3 {
     margin-top: 0;
     font-size: 16px;
+    font-weight: 600;
 }
 
 /* Page header */
@@ -398,13 +419,13 @@ body {
 
 .subtitle {
     font-size: 13px;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 /* Buttons */
 .btn {
     padding: 8px 14px;
-    border-radius: 6px;
+    border-radius: var(--field-radius);
     border: none;
     cursor: pointer;
     font-size: 14px;
@@ -415,13 +436,14 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--accent);
+    background: linear-gradient(135deg, #0ea5e9, var(--accent));
     color: #fff;
+    box-shadow: 0 12px 24px -12px rgba(34, 211, 238, 0.85);
 }
 
 .btn-secondary {
-    background-color: #e5e7eb;
-    color: #111827;
+    background-color: var(--secondary);
+    color: var(--text-main);
 }
 
 .btn-danger {
@@ -444,9 +466,11 @@ body {
 
     .filters input[type="text"] {
         padding: 8px;
-        border-radius: 6px;
+        border-radius: var(--field-radius);
         border: 1px solid var(--border);
         width: 220px;
+        background: rgba(15, 23, 42, 0.65);
+        color: var(--text-main);
     }
 
 .checkbox {
@@ -470,7 +494,7 @@ body {
         text-align: left;
         font-size: 13px;
         text-transform: uppercase;
-        color: #6b7280;
+        color: var(--text-muted);
         border-bottom: 1px solid var(--border);
         padding: 10px;
     }
@@ -481,7 +505,7 @@ body {
     }
 
     .table tr:hover {
-        background-color: #f9fafb;
+        background-color: rgba(255, 255, 255, 0.04);
     }
 
 .text-right {
@@ -491,7 +515,7 @@ body {
 .empty {
     text-align: center;
     padding: 30px;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 /* Badges */
@@ -515,7 +539,7 @@ body {
 .pagination {
     margin-top: 16px;
     font-size: 13px;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 /* Forms */
