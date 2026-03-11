@@ -1,14 +1,14 @@
 :root {
-    --primary: #0f172a;
-    --secondary: #1e293b;
-    --bg: #020617;
-    --card: #0f172a;
-    --border: rgba(255, 255, 255, 0.1);
-    --accent: #22d3ee;
+    --primary: #f8fafc;
+    --secondary: #e2e8f0;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: rgba(15, 23, 42, 0.12);
+    --accent: #0ea5e9;
     --success: #16a34a;
     --danger: #dc2626;
-    --text-main: #f8fafc;
-    --text-muted: #9ca3af;
+    --text-main: #0f172a;
+    --text-muted: #475569;
     --card-radius: 14px;
     --field-radius: 8px;
 
@@ -228,7 +228,7 @@ body {
 .sidebar {
     width: 240px;
     background-color: var(--primary);
-    color: #fff;
+    color: var(--text-main);
     display: flex;
     flex-direction: column;
 }
@@ -238,7 +238,7 @@ body {
     font-size: 20px;
     font-weight: 600;
     text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,.1);
+    border-bottom: 1px solid var(--border);
 }
 
 .sidebar-nav {
@@ -252,14 +252,14 @@ body {
         align-items: center;
         gap: 12px;
         padding: 12px 20px;
-        color: #e5e7eb;
+        color: #1e293b;
         text-decoration: none;
         font-size: 14px;
     }
 
         .sidebar-nav a:hover {
             background-color: var(--secondary);
-            color: #fff;
+            color: #0f172a;
         }
 
 /* Main */
@@ -267,7 +267,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 35%), var(--bg);
+    background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.10), transparent 35%), var(--bg);
 }
 
 /* Topbar */
@@ -279,7 +279,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    box-shadow: 0 10px 25px -15px rgba(0, 0, 0, 0.75);
+    box-shadow: 0 10px 25px -15px rgba(15, 23, 42, 0.25);
     backdrop-filter: blur(10px);
 }
 
@@ -469,7 +469,7 @@ body {
         border-radius: var(--field-radius);
         border: 1px solid var(--border);
         width: 220px;
-        background: rgba(15, 23, 42, 0.65);
+        background: #ffffff;
         color: var(--text-main);
     }
 
@@ -505,7 +505,7 @@ body {
     }
 
     .table tr:hover {
-        background-color: rgba(255, 255, 255, 0.04);
+        background-color: rgba(14, 165, 233, 0.08);
     }
 
 .text-right {
