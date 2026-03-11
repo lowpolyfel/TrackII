@@ -430,7 +430,7 @@ public class RouteService
     }
     // ... dentro de RouteService.cs ...
 
-    public void Save(RouteEditVm vm)
+    public void Save(RouteEditVm vm, bool isAdmin)
     {
         if (vm.SubfamilyId == 0) throw new InvalidOperationException("Selecciona una Subfamily.");
         vm.Name = (vm.Name ?? "").Trim();
@@ -538,7 +538,7 @@ public class RouteService
             }
 
             // Si está activa y tiene WIP, solo permitimos cambio de Nombre, NO de pasos NI de subfamilia
-            if (isActive && CountWipInRoute(cn, tx, vm.Id) > 0)
+            if (isActive && CountWipInRoute(cn, tx, vm.Id) > 0 && !isAdmin)
             {
                 if (oldSubfamilyId != vm.SubfamilyId)
                     throw new InvalidOperationException("No se puede cambiar la Subfamilia: hay WIP en proceso en esta ruta activa.");
@@ -585,13 +585,8 @@ public class RouteService
                 upd.ExecuteNonQuery();
             }
 
-            // Reemplazar pasos
-            using (var del = new MySqlCommand("DELETE FROM route_step WHERE route_id=@id", cn, tx))
-            {
-                del.Parameters.AddWithValue("@id", vm.Id);
-                del.ExecuteNonQuery();
-            }
-            InsertSteps(cn, tx, vm.Id, steps);
+            // Reemplazar pasos sin romper FK históricas (wip/scan/wip_step_execution)
+            UpsertStepsKeepingReferences(cn, tx, vm.Id, steps);
         }
 
         tx.Commit();
@@ -612,6 +607,95 @@ public class RouteService
             ins.Parameters.AddWithValue("@loc", steps[i].LocationId);
             ins.ExecuteNonQuery();
         }
+    }
+
+    private static void UpsertStepsKeepingReferences(MySqlConnection cn, MySqlTransaction tx, uint routeId, List<RouteStepVm> steps)
+    {
+        var existingStepIds = new List<uint>();
+
+        using (var cmd = new MySqlCommand(@"
+            SELECT id
+            FROM route_step
+            WHERE route_id=@r
+            ORDER BY step_number, id", cn, tx))
+        {
+            cmd.Parameters.AddWithValue("@r", routeId);
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read()) existingStepIds.Add(rd.GetUInt32("id"));
+        }
+
+        // Mover temporalmente todos los step_number para evitar choques de unicidad
+        for (int i = 0; i < existingStepIds.Count; i++)
+        {
+            using var temp = new MySqlCommand(@"
+                UPDATE route_step
+                SET step_number=@n
+                WHERE id=@id", cn, tx);
+            temp.Parameters.AddWithValue("@n", 20000 + i);
+            temp.Parameters.AddWithValue("@id", existingStepIds[i]);
+            temp.ExecuteNonQuery();
+        }
+
+        var toUpdate = Math.Min(existingStepIds.Count, steps.Count);
+
+        // Reutilizamos IDs existentes para no invalidar referencias
+        for (int i = 0; i < toUpdate; i++)
+        {
+            using var upd = new MySqlCommand(@"
+                UPDATE route_step
+                SET step_number=@n, location_id=@loc
+                WHERE id=@id", cn, tx);
+            upd.Parameters.AddWithValue("@n", i + 1);
+            upd.Parameters.AddWithValue("@loc", steps[i].LocationId);
+            upd.Parameters.AddWithValue("@id", existingStepIds[i]);
+            upd.ExecuteNonQuery();
+        }
+
+        // Si hay más pasos nuevos, insertar adicionales
+        for (int i = toUpdate; i < steps.Count; i++)
+        {
+            using var ins = new MySqlCommand(@"
+                INSERT INTO route_step (route_id, step_number, location_id)
+                VALUES (@r, @sn, @loc)", cn, tx);
+            ins.Parameters.AddWithValue("@r", routeId);
+            ins.Parameters.AddWithValue("@sn", i + 1);
+            ins.Parameters.AddWithValue("@loc", steps[i].LocationId);
+            ins.ExecuteNonQuery();
+        }
+
+        // Si sobran pasos viejos: borrar solo los no referenciados; los referenciados se preservan como históricos
+        var parkingStep = 30000;
+        for (int i = toUpdate; i < existingStepIds.Count; i++)
+        {
+            var stepId = existingStepIds[i];
+            if (IsRouteStepReferenced(cn, tx, stepId))
+            {
+                using var park = new MySqlCommand(@"
+                    UPDATE route_step
+                    SET step_number=@n
+                    WHERE id=@id", cn, tx);
+                park.Parameters.AddWithValue("@n", parkingStep++);
+                park.Parameters.AddWithValue("@id", stepId);
+                park.ExecuteNonQuery();
+                continue;
+            }
+
+            using var del = new MySqlCommand("DELETE FROM route_step WHERE id=@id", cn, tx);
+            del.Parameters.AddWithValue("@id", stepId);
+            del.ExecuteNonQuery();
+        }
+    }
+
+    private static bool IsRouteStepReferenced(MySqlConnection cn, MySqlTransaction tx, uint routeStepId)
+    {
+        using var cmd = new MySqlCommand(@"
+            SELECT
+              (SELECT COUNT(*) FROM wip_item WHERE current_step_id=@id) +
+              (SELECT COUNT(*) FROM scan_event WHERE route_step_id=@id) +
+              (SELECT COUNT(*) FROM wip_step_execution WHERE route_step_id=@id)
+        ", cn, tx);
+        cmd.Parameters.AddWithValue("@id", routeStepId);
+        return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
     }
 
     private static int CountWipInRoute(MySqlConnection cn, MySqlTransaction tx, uint routeId)
