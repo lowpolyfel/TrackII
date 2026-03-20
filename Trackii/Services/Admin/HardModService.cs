@@ -47,7 +47,6 @@ public class HardModService
             ExecuteDelete(cn, tx, "DELETE FROM wip_step_execution WHERE wip_item_id=@id", id);
             ExecuteDelete(cn, tx, "DELETE FROM scan_event WHERE wip_item_id=@id", id);
             ExecuteDelete(cn, tx, "DELETE FROM wip_rework_log WHERE wip_item_id=@id", id);
-            ExecuteDelete(cn, tx, "DELETE FROM scrap_log WHERE wip_item_id=@id", id); // <- Nueva línea agregada
             var deleted = ExecuteDelete(cn, tx, "DELETE FROM wip_item WHERE id=@id", id);
 
             if (deleted == 0)

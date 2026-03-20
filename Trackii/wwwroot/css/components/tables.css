@@ -1,0 +1,48 @@
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.table,
+.route-flow-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(23, 88, 177, 0.08);
+}
+
+.table th,
+.route-flow-table thead th {
+    padding: 15px 16px;
+    text-align: left;
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    background: rgba(239, 245, 255, 0.92);
+}
+
+.table td,
+.route-flow-table tbody td {
+    padding: 15px 16px;
+    border-top: 1px solid rgba(23, 88, 177, 0.08);
+    vertical-align: middle;
+}
+
+.table tbody tr:hover,
+.route-flow-table tbody tr:hover {
+    background: rgba(232, 242, 255, 0.6);
+}
+
+.text-right {
+    text-align: right;
+}
+
+.empty {
+    padding: 30px;
+    text-align: center;
+    color: var(--text-muted);
+}

@@ -1,0 +1,41 @@
+:root {
+    --brand-900: #0d2f66;
+    --brand-800: #11438c;
+    --brand-700: #1758b1;
+    --brand-600: #1d6dd6;
+    --brand-500: #3a86e8;
+    --brand-300: #a8c8f5;
+    --brand-200: #d6e6fb;
+    --brand-100: #eef5ff;
+    --page-bg: linear-gradient(180deg, #f7faff 0%, #edf3ff 100%);
+    --surface: rgba(255, 255, 255, 0.88);
+    --surface-strong: #ffffff;
+    --surface-alt: #f5f9ff;
+    --surface-soft: rgba(221, 233, 255, 0.55);
+    --border: rgba(23, 88, 177, 0.12);
+    --border-strong: rgba(23, 88, 177, 0.24);
+    --text-main: #16233b;
+    --text-muted: #61718e;
+    --text-soft: #8b98af;
+    --success-bg: #eefbf4;
+    --success-text: #1e8f56;
+    --warning-bg: #fff7ec;
+    --warning-text: #b76518;
+    --danger-bg: #fff0f3;
+    --danger-text: #c03f63;
+    --shadow-soft: 0 24px 60px rgba(24, 54, 110, 0.10);
+    --shadow-card: 0 20px 40px rgba(30, 73, 149, 0.08);
+    --radius-xl: 32px;
+    --radius-lg: 24px;
+    --radius-md: 18px;
+    --radius-sm: 14px;
+    --sidebar-width: 288px;
+
+    --bs-body-bg: transparent;
+    --bs-body-color: var(--text-main);
+    --bs-border-color: var(--border);
+    --bs-primary: var(--brand-700);
+    --bs-secondary-color: var(--text-muted);
+    --bs-card-bg: var(--surface-strong);
+    --bs-card-border-color: var(--border);
+}
