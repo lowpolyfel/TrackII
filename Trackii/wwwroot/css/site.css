@@ -1310,3 +1310,94 @@ body {
 .auth-button {
     background: #0f172a;
 }
+
+.alert.alert-warning {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #9a3412;
+}
+
+.alert.alert-success {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.hardmod-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.hardmod-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.hardmod-warning-box {
+    max-width: 420px;
+    margin: 0;
+}
+
+.hardmod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.hardmod-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hardmod-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hardmod-input-row {
+    display: flex;
+    gap: 10px;
+}
+
+.hardmod-input-row .input {
+    flex: 1;
+}
+
+.hardmod-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.hardmod-preview > div {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #ffffff;
+}
+
+.hardmod-preview span {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #64748b;
+}
+
+.hardmod-delete-form {
+    margin-top: auto;
+}
+
+@media (max-width: 720px) {
+    .hardmod-input-row {
+        flex-direction: column;
+    }
+}

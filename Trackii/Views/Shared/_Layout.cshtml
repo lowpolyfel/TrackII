@@ -104,6 +104,11 @@
 
                 @if (User.IsInRole("Admin"))
                 {
+                    <a asp-controller="HardMod" asp-action="Index">
+                        <i class="fa-solid fa-skull-crossbones"></i>
+                        <span>Hard Mod</span>
+                    </a>
+
                     <a asp-controller="User" asp-action="Index">
                         <i class="fa-solid fa-users"></i>
                         <span>Users</span>
