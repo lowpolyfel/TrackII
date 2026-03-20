@@ -1,0 +1,77 @@
+.hardmod-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.hardmod-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    background: linear-gradient(145deg, rgba(225, 239, 255, 0.95), rgba(248, 251, 255, 0.94));
+}
+
+.hardmod-warning-box {
+    max-width: 420px;
+    margin: 0;
+}
+
+.hardmod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+}
+
+.hardmod-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hardmod-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hardmod-input-row {
+    display: flex;
+    gap: 10px;
+}
+
+.hardmod-input-row .input {
+    flex: 1;
+}
+
+.hardmod-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.hardmod-preview > div {
+    padding: 16px 18px;
+    border-radius: 22px;
+    border: 1px solid rgba(23, 88, 177, 0.08);
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.hardmod-preview span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-soft);
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.hardmod-delete-form {
+    margin-top: auto;
+}
+
+@media (max-width: 720px) {
+    .hardmod-input-row {
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,151 @@
+.route-flow-view {
+    overflow: hidden;
+}
+
+.route-flow-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+    padding: 18px 20px;
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(228, 239, 255, 0.90), rgba(245, 249, 255, 0.92));
+}
+
+.route-flow-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.route-flow-board {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 26px;
+    background: rgba(248, 251, 255, 0.80);
+    border: 1px solid rgba(23, 88, 177, 0.08);
+}
+
+.route-flow-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.summary-card {
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(23, 88, 177, 0.08);
+}
+
+.summary-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-soft);
+}
+
+.summary-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.route-flow-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+}
+
+.route-flow-table .step-index {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    background: rgba(219, 235, 255, 0.88);
+    color: var(--brand-800);
+    font-weight: 700;
+}
+
+.route-flow-table .step-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.route-flow-table .step-title {
+    font-weight: 700;
+}
+
+.route-flow-table .step-subtitle,
+.route-flow-table .step-detail {
+    color: var(--text-muted);
+    font-size: .84rem;
+}
+
+.route-flow-table .step-detail-value {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(219, 235, 255, 0.88);
+    color: var(--brand-700);
+    font-weight: 700;
+}
+
+.route-step-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.route-step-hint {
+    margin-bottom: 10px;
+    color: var(--text-muted);
+    font-size: .86rem;
+}
+
+.route-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.route-step {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(23, 88, 177, 0.08);
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.route-step.empty {
+    justify-content: center;
+    color: var(--text-muted);
+    border-style: dashed;
+}
+
+.route-step-number {
+    font-weight: 700;
+    color: var(--brand-700);
+}
+
+.route-step-actions {
+    display: flex;
+    gap: 6px;
+}
