@@ -66,3 +66,38 @@
     color: var(--brand-700);
     background: rgba(220, 235, 255, 0.55);
 }
+
+.sort-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: none;
+    font: inherit;
+    font-size: .75rem;
+    font-weight: 700;
+    color: inherit;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    background: transparent;
+}
+
+.sort-button::after {
+    content: "\f0dc";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    opacity: .45;
+}
+
+.sort-button.active::after {
+    content: "\f0de";
+    opacity: 1;
+}
+
+.sort-button.active.desc::after {
+    content: "\f0dd";
+}
+
+.sort-button-right {
+    margin-left: auto;
+}
