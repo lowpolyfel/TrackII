@@ -172,6 +172,16 @@
     font-weight: 600;
 }
 
+.engineering-grouped-card {
+    margin-top: 14px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(23, 88, 177, 0.12);
+}
+
+.engineering-grouped-card h4 {
+    margin: 0 0 10px;
+}
+
 .engineering-orders-table td,
 .engineering-orders-table th {
     white-space: nowrap;

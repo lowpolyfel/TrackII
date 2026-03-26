@@ -339,6 +339,7 @@
                                 data-current-step="@item.CurrentStep"
                                 data-current-step-qty="@(item.CurrentStepQty?.ToString() ?? string.Empty)"
                                 data-next-step="@item.NextStep"
+                                data-next-location="@item.NextLocation"
                                 data-wip-status-normalized="@item.WipStatusNormalized"
                                 data-wip-start="@(item.WipCreatedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty)"
                                 data-age-days="@(item.AgeDays?.ToString() ?? string.Empty)">
@@ -356,6 +357,27 @@
                     }
                 </tbody>
             </table>
+        </div>
+
+        <div class="engineering-grouped-card">
+            <h4>Agrupación por siguiente localidad y días desde creación</h4>
+            <div class="table-wrapper">
+                <table class="table engineering-orders-table" id="nextLocationAgeSummaryTable">
+                    <thead>
+                        <tr>
+                            <th>Siguiente localidad</th>
+                            <th class="text-right">Días desde creación</th>
+                            <th>Órdenes</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="empty">Sin datos agrupados.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -467,6 +489,7 @@
             const exportButton = document.getElementById("exportFilteredOrdersCsv");
             const sortBar = document.getElementById("interactiveSortBar");
             const activeSortCriteria = document.getElementById("activeSortCriteria");
+            const groupedTable = document.getElementById("nextLocationAgeSummaryTable");
             if (!table) return;
 
             const tbody = table.querySelector("tbody");
@@ -496,9 +519,58 @@
                 sortedRows.forEach((row) => tbody.appendChild(row));
             };
 
+            const renderGroupedSummary = () => {
+                if (!groupedTable) return;
+
+                const groupedBody = groupedTable.querySelector("tbody");
+                if (!groupedBody) return;
+
+                const visibleRows = Array.from(tbody.querySelectorAll("tr")).filter((row) => !row.querySelector(".empty"));
+                if (!visibleRows.length) {
+                    groupedBody.innerHTML = '<tr><td colspan="4" class="empty">Sin datos agrupados.</td></tr>';
+                    return;
+                }
+
+                const groupedMap = new Map();
+                visibleRows.forEach((row) => {
+                    const nextLocation = (row.dataset.nextLocation || "Sin siguiente localidad").trim() || "Sin siguiente localidad";
+                    const ageRaw = (row.dataset.ageDays || "").trim();
+                    const ageDays = ageRaw === "" ? "-" : ageRaw;
+                    const key = `${nextLocation}|||${ageDays}`;
+
+                    if (!groupedMap.has(key)) {
+                        groupedMap.set(key, { nextLocation, ageDays, orders: [] });
+                    }
+
+                    groupedMap.get(key).orders.push(row.dataset.wo || "-");
+                });
+
+                const groupedRows = Array.from(groupedMap.values()).sort((a, b) => {
+                    if (a.nextLocation !== b.nextLocation) return a.nextLocation.localeCompare(b.nextLocation);
+
+                    const aNumber = Number(a.ageDays);
+                    const bNumber = Number(b.ageDays);
+                    const aSafe = Number.isNaN(aNumber) ? Number.MIN_SAFE_INTEGER : aNumber;
+                    const bSafe = Number.isNaN(bNumber) ? Number.MIN_SAFE_INTEGER : bNumber;
+                    return bSafe - aSafe;
+                });
+
+                groupedBody.innerHTML = "";
+                groupedRows.forEach((group) => {
+                    const summaryRow = document.createElement("tr");
+                    summaryRow.innerHTML = `
+                        <td>${group.nextLocation}</td>
+                        <td class="text-right">${group.ageDays}</td>
+                        <td>${group.orders.join(", ")}</td>
+                        <td class="text-right">${group.orders.length}</td>`;
+                    groupedBody.appendChild(summaryRow);
+                });
+            };
+
             const applySort = () => {
                 if (!rows.length || !activeCriteria.length) {
                     renderRows(rows);
+                    renderGroupedSummary();
                     return;
                 }
 
@@ -517,6 +589,7 @@
                 });
 
                 renderRows(sortedRows);
+                renderGroupedSummary();
             };
 
             const syncButtons = () => {
@@ -580,6 +653,7 @@
 
             syncButtons();
             applySort();
+            renderGroupedSummary();
 
             if (exportButton) {
                 exportButton.addEventListener("click", () => {
