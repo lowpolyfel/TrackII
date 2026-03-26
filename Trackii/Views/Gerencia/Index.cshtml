@@ -147,7 +147,8 @@
 
         const productionLabels = @Html.Raw(JsonSerializer.Serialize(Model.ProductionByLocationChart.Labels));
         const productionValues = @Html.Raw(JsonSerializer.Serialize(Model.ProductionByLocationChart.Values));
-        const wipLabels = @Html.Raw(JsonSerializer.Serialize(Model.WipStatusChart.Labels)).map(normalizeStatusLabel);
+        const wipLabelsRaw = @Html.Raw(JsonSerializer.Serialize(Model.WipStatusChart.Labels));
+        const wipLabels = wipLabelsRaw.map(normalizeStatusLabel);
         const wipValues = @Html.Raw(JsonSerializer.Serialize(Model.WipStatusChart.Values));
         const scanLabels = @Html.Raw(JsonSerializer.Serialize(Model.ScanEventChart.Labels));
         const scanValues = @Html.Raw(JsonSerializer.Serialize(Model.ScanEventChart.Values));

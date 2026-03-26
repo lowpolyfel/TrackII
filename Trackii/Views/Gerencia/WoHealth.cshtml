@@ -75,7 +75,8 @@
             return map[key] || value;
         };
 
-        const woLabels = @Html.Raw(JsonSerializer.Serialize(Model.StatusChart.Labels)).map(normalizeStatusLabel);
+        const woLabelsRaw = @Html.Raw(JsonSerializer.Serialize(Model.StatusChart.Labels));
+        const woLabels = woLabelsRaw.map(normalizeStatusLabel);
         const woValues = @Html.Raw(JsonSerializer.Serialize(Model.StatusChart.Values));
 
         new Chart(document.getElementById('woStatusChart'), {
