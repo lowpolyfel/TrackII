@@ -1,14 +1,16 @@
 @model Trackii.Models.Gerencia.GerenciaWeeklyOutputVm
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Salida semanal/mensual";
+    var spanish = new CultureInfo("es-MX");
 }
 
 <div class="dashboard">
     <div class="page-header">
         <div>
-            <h2>Salida de piezas por localidad</h2>
-            <p class="subtitle">Selecciona semana o periodo mensual para análisis ejecutivo.</p>
+            <h2>Salida de piezas por subfamilia</h2>
+            <p class="subtitle">Selecciona semana o periodo mensual para un análisis ejecutivo ordenado.</p>
         </div>
         <div class="header-actions">
             <a asp-controller="Gerencia" asp-action="Index" class="btn btn-secondary">
@@ -35,10 +37,10 @@
 
     <div class="card gerencia-weekly-card">
         <p class="subtitle">
-            Periodo seleccionado:
+            Período seleccionado:
             <strong>@Model.Matrix.StartDate.ToString("yyyy-MM-dd")</strong> al
             <strong>@Model.Matrix.EndDate.ToString("yyyy-MM-dd")</strong>.
-            Valores por celda: <strong>Piezas / Scrap</strong>.
+            Valores por celda: <strong>piezas buenas (verde) / scrap (rojo)</strong>.
         </p>
 
         <div class="table-wrapper">
@@ -46,9 +48,9 @@
                 <thead>
                     <tr>
                         <th>Día</th>
-                        @foreach (var location in Model.Matrix.Locations)
+                        @foreach (var subfamily in Model.Matrix.Subfamilies)
                         {
-                            <th>@location</th>
+                            <th>@subfamily</th>
                         }
                         <th class="text-right">Total piezas</th>
                         <th class="text-right">Total scrap</th>
@@ -58,7 +60,7 @@
                     @if (!Model.Matrix.Rows.Any())
                     {
                         <tr>
-                            <td colspan="4" class="empty">Sin resultados en este periodo.</td>
+                            <td colspan="@(Model.Matrix.Subfamilies.Count + 3)" class="empty">Sin resultados en este periodo.</td>
                         </tr>
                     }
                     else
@@ -66,12 +68,38 @@
                         foreach (var row in Model.Matrix.Rows)
                         {
                             <tr>
-                                <td>@row.Day.ToString("dddd dd MMM")</td>
+                                <td>@row.Day.ToString("dddd dd MMMM", spanish)</td>
                                 @foreach (var cell in row.Cells)
                                 {
                                     <td>
-                                        <span class="weekly-pill qty">@cell.Qty</span>
-                                        <span class="weekly-pill scrap">S @cell.Scrap</span>
+                                        <details class="weekly-cell-details">
+                                            <summary>
+                                                <span class="weekly-pill qty">@cell.Qty</span>
+                                                <span class="weekly-pill scrap">@cell.Scrap</span>
+                                            </summary>
+                                            @if (cell.Details.Any())
+                                            {
+                                                <div class="weekly-details-grid">
+                                                    @foreach (var detail in cell.Details)
+                                                    {
+                                                        <div class="weekly-detail-row">
+                                                            <div>
+                                                                <strong>WO @detail.WoNumber</strong>
+                                                                <div>@detail.Product</div>
+                                                            </div>
+                                                            <div class="weekly-detail-metrics">
+                                                                <span class="weekly-pill qty">@detail.Qty</span>
+                                                                <span class="weekly-pill scrap">@detail.Scrap</span>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="weekly-empty">Sin órdenes registradas.</div>
+                                            }
+                                        </details>
                                     </td>
                                 }
                                 <td class="text-right">@row.TotalQty</td>

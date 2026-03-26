@@ -1,8 +1,10 @@
 @using System.Text.Json
+@using System.Globalization
 @model Trackii.Models.Gerencia.GerenciaDashboardVm
 
 @{
     ViewData["Title"] = "Gerencia";
+    var spanish = new CultureInfo("es-MX");
 }
 
 <div class="dashboard">
@@ -50,7 +52,7 @@
     <div class="card gerencia-weekly-card">
         <div class="page-header">
             <div>
-                <h3>Órdenes salidas por localidad — Semana actual</h3>
+                <h3>Salida semanal por subfamilia — Semana actual</h3>
                 <p class="subtitle">
                     Periodo:
                     <strong>@Model.WeeklyOutput.StartDate.ToString("yyyy-MM-dd")</strong>
@@ -70,9 +72,9 @@
                 <thead>
                     <tr>
                         <th>Día</th>
-                        @foreach (var location in Model.WeeklyOutput.Locations)
+                        @foreach (var subfamily in Model.WeeklyOutput.Subfamilies)
                         {
-                            <th>@location</th>
+                            <th>@subfamily</th>
                         }
                         <th class="text-right">Total piezas</th>
                         <th class="text-right">Total scrap</th>
@@ -82,7 +84,7 @@
                     @if (!Model.WeeklyOutput.Rows.Any())
                     {
                         <tr>
-                            <td colspan="4" class="empty">Sin datos para la semana actual.</td>
+                            <td colspan="@(Model.WeeklyOutput.Subfamilies.Count + 3)" class="empty">Sin datos para la semana actual.</td>
                         </tr>
                     }
                     else
@@ -90,12 +92,12 @@
                         foreach (var row in Model.WeeklyOutput.Rows)
                         {
                             <tr>
-                                <td>@row.Day.ToString("dddd dd MMM")</td>
+                                <td>@row.Day.ToString("dddd dd MMM", spanish)</td>
                                 @foreach (var cell in row.Cells)
                                 {
                                     <td>
                                         <span class="weekly-pill qty">@cell.Qty</span>
-                                        <span class="weekly-pill scrap">S @cell.Scrap</span>
+                                        <span class="weekly-pill scrap">@cell.Scrap</span>
                                     </td>
                                 }
                                 <td class="text-right">@row.TotalQty</td>

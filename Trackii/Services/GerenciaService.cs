@@ -293,28 +293,42 @@ public class GerenciaService
             EndDate = endDate
         };
 
-        var locationNames = new List<string>();
-        using (var locationsCmd = new MySqlCommand("SELECT name FROM location ORDER BY name", cn))
-        using (var locationRd = locationsCmd.ExecuteReader())
+        var subfamilyNames = new List<string>();
+        using (var subfamilyCmd = new MySqlCommand(@"
+            SELECT DISTINCT COALESCE(s.name, 'Sin subfamilia') AS subfamily_name
+            FROM wip_step_execution wse
+            JOIN wip_item wip ON wip.id = wse.wip_item_id
+            JOIN work_order wo ON wo.id = wip.wo_order_id
+            JOIN product p ON p.id = wo.product_id
+            LEFT JOIN subfamily s ON s.id = p.id_subfamily
+            WHERE DATE(wse.create_at) BETWEEN @startDate AND @endDate
+            ORDER BY subfamily_name", cn))
         {
-            while (locationRd.Read())
+            subfamilyCmd.Parameters.AddWithValue("@startDate", startDate);
+            subfamilyCmd.Parameters.AddWithValue("@endDate", endDate);
+
+            using var subfamilyRd = subfamilyCmd.ExecuteReader();
+            while (subfamilyRd.Read())
             {
-                locationNames.Add(locationRd.GetString("name"));
+                subfamilyNames.Add(subfamilyRd.GetString("subfamily_name"));
             }
         }
 
-        matrix.Locations.AddRange(locationNames);
+        matrix.Subfamilies.AddRange(subfamilyNames);
 
         var map = new Dictionary<string, (int Qty, int Scrap)>(StringComparer.OrdinalIgnoreCase);
         using (var dataCmd = new MySqlCommand(@"
             SELECT DATE(wse.create_at) AS day,
-                   l.name AS location_name,
+                   COALESCE(s.name, 'Sin subfamilia') AS subfamily_name,
                    COALESCE(SUM(wse.qty_in - wse.qty_scrap), 0) AS qty_produced,
                    COALESCE(SUM(wse.qty_scrap), 0) AS qty_scrap
             FROM wip_step_execution wse
-            JOIN location l ON l.id = wse.location_id
+            JOIN wip_item wip ON wip.id = wse.wip_item_id
+            JOIN work_order wo ON wo.id = wip.wo_order_id
+            JOIN product p ON p.id = wo.product_id
+            LEFT JOIN subfamily s ON s.id = p.id_subfamily
             WHERE DATE(wse.create_at) BETWEEN @startDate AND @endDate
-            GROUP BY DATE(wse.create_at), l.name", cn))
+            GROUP BY DATE(wse.create_at), subfamily_name", cn))
         {
             dataCmd.Parameters.AddWithValue("@startDate", startDate);
             dataCmd.Parameters.AddWithValue("@endDate", endDate);
@@ -322,10 +336,50 @@ public class GerenciaService
             using var rd = dataCmd.ExecuteReader();
             while (rd.Read())
             {
-                var key = $"{rd.GetDateTime("day"):yyyy-MM-dd}|{rd.GetString("location_name")}";
+                var key = $"{rd.GetDateTime("day"):yyyy-MM-dd}|{rd.GetString("subfamily_name")}";
                 map[key] = (
                     Qty: Convert.ToInt32(rd.GetInt64("qty_produced")),
                     Scrap: Convert.ToInt32(rd.GetInt64("qty_scrap")));
+            }
+        }
+
+        var detailMap = new Dictionary<string, List<WeeklyOutputOrderDetailVm>>(StringComparer.OrdinalIgnoreCase);
+        using (var detailCmd = new MySqlCommand(@"
+            SELECT DATE(wse.create_at) AS day,
+                   COALESCE(s.name, 'Sin subfamilia') AS subfamily_name,
+                   wo.wo_number,
+                   p.part_number,
+                   COALESCE(SUM(wse.qty_in - wse.qty_scrap), 0) AS qty_produced,
+                   COALESCE(SUM(wse.qty_scrap), 0) AS qty_scrap
+            FROM wip_step_execution wse
+            JOIN wip_item wip ON wip.id = wse.wip_item_id
+            JOIN work_order wo ON wo.id = wip.wo_order_id
+            JOIN product p ON p.id = wo.product_id
+            LEFT JOIN subfamily s ON s.id = p.id_subfamily
+            WHERE DATE(wse.create_at) BETWEEN @startDate AND @endDate
+            GROUP BY DATE(wse.create_at), subfamily_name, wo.wo_number, p.part_number
+            ORDER BY day, subfamily_name, wo.wo_number", cn))
+        {
+            detailCmd.Parameters.AddWithValue("@startDate", startDate);
+            detailCmd.Parameters.AddWithValue("@endDate", endDate);
+
+            using var rd = detailCmd.ExecuteReader();
+            while (rd.Read())
+            {
+                var key = $"{rd.GetDateTime("day"):yyyy-MM-dd}|{rd.GetString("subfamily_name")}";
+                if (!detailMap.TryGetValue(key, out var list))
+                {
+                    list = new List<WeeklyOutputOrderDetailVm>();
+                    detailMap[key] = list;
+                }
+
+                list.Add(new WeeklyOutputOrderDetailVm
+                {
+                    WoNumber = rd.GetString("wo_number"),
+                    Product = rd.GetString("part_number"),
+                    Qty = Convert.ToInt32(rd.GetInt64("qty_produced")),
+                    Scrap = Convert.ToInt32(rd.GetInt64("qty_scrap"))
+                });
             }
         }
 
@@ -333,16 +387,18 @@ public class GerenciaService
         {
             var row = new WeeklyOutputDayRowVm { Day = day };
 
-            foreach (var location in locationNames)
+            foreach (var subfamily in subfamilyNames)
             {
-                var key = $"{day:yyyy-MM-dd}|{location}";
+                var key = $"{day:yyyy-MM-dd}|{subfamily}";
                 var values = map.TryGetValue(key, out var found) ? found : (Qty: 0, Scrap: 0);
+                var details = detailMap.TryGetValue(key, out var detailRows) ? detailRows : new List<WeeklyOutputOrderDetailVm>();
 
                 row.Cells.Add(new WeeklyOutputCellVm
                 {
-                    Location = location,
+                    Subfamily = subfamily,
                     Qty = values.Qty,
-                    Scrap = values.Scrap
+                    Scrap = values.Scrap,
+                    Details = details
                 });
 
                 row.TotalQty += values.Qty;
