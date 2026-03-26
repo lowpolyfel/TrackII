@@ -48,7 +48,7 @@ public class HardModService
                 return new HardDeleteResultVm
                 {
                     Success = false,
-                    Message = $"No se encontró el work_order #{workOrderId}."
+                Message = $"No se encontró el work_order #{workOrderId}."
                 };
             }
 
@@ -146,7 +146,7 @@ public class HardModService
         return results;
     }
 
-    private static (uint WorkOrderId, string WorkOrderNumber, int WipItemsCount, int WipStepExecutionsCount)? GetDeletePreview(
+    private static HardDeletePreviewVm? GetDeletePreview(
         MySqlConnection cn,
         MySqlTransaction tx,
         uint workOrderId)
@@ -169,11 +169,13 @@ public class HardModService
         if (!rd.Read())
             return null;
 
-        return (
-            WorkOrderId: rd.GetUInt32("work_order_id"),
-            WorkOrderNumber: rd.GetString("wo_number"),
-            WipItemsCount: Convert.ToInt32(rd["wip_items_count"]),
-            WipStepExecutionsCount: Convert.ToInt32(rd["wip_step_executions_count"]));
+        return new HardDeletePreviewVm
+        {
+            WorkOrderId = rd.GetUInt32("work_order_id"),
+            WorkOrderNumber = rd.GetString("wo_number"),
+            WipItemsCount = Convert.ToInt32(rd["wip_items_count"]),
+            WipStepExecutionsCount = Convert.ToInt32(rd["wip_step_executions_count"])
+        };
     }
 
     private static int ExecuteDelete(MySqlConnection cn, MySqlTransaction tx, string sql, uint id)
@@ -309,5 +311,13 @@ public class HardModService
         }
 
         return ids;
+    }
+
+    private class HardDeletePreviewVm
+    {
+        public uint WorkOrderId { get; set; }
+        public string WorkOrderNumber { get; set; } = string.Empty;
+        public int WipItemsCount { get; set; }
+        public int WipStepExecutionsCount { get; set; }
     }
 }
