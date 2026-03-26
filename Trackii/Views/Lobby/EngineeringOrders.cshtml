@@ -288,32 +288,45 @@
             <div class="header-actions">
                 <button type="button" class="btn btn-secondary" id="exportFilteredOrdersCsv">
                     <i class="fa-solid fa-file-csv"></i>
-                    Exportar CSV
+                    Exportar Excel
                 </button>
             </div>
         </div>
 
+        <div class="interactive-sort-bar" id="interactiveSortBar">
+            <span class="interactive-sort-label">Ordenar por:</span>
+            <button type="button" class="criterion-button" data-criterion-key="wo" data-criterion-type="number">Órdenes</button>
+            <button type="button" class="criterion-button" data-criterion-key="product" data-criterion-type="text">Producto</button>
+            <button type="button" class="criterion-button" data-criterion-key="subfamily" data-criterion-type="text">Subfamilia</button>
+            <button type="button" class="criterion-button" data-criterion-key="currentStep" data-criterion-type="text">Paso actual</button>
+            <button type="button" class="criterion-button" data-criterion-key="currentStepQty" data-criterion-type="number">Piezas paso actual</button>
+            <button type="button" class="criterion-button" data-criterion-key="nextStep" data-criterion-type="text">Paso siguiente</button>
+            <button type="button" class="criterion-button" data-criterion-key="wipStatusNormalized" data-criterion-type="text">Estado WIP</button>
+            <button type="button" class="criterion-button" data-criterion-key="ageDays" data-criterion-type="number">Días desde creación</button>
+            <button type="button" class="criterion-button" data-criterion-key="wipStart" data-criterion-type="date">Fecha creación</button>
+        </div>
+        <div class="interactive-sort-active" id="activeSortCriteria"></div>
+
         <div class="table-wrapper">
-            <table class="table" id="filteredOrdersTable">
+            <table class="table engineering-orders-table" id="filteredOrdersTable">
                 <thead>
                     <tr>
-                        <th><button type="button" class="sort-button" data-sort-key="wo" data-sort-type="number">No. de orden</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="product" data-sort-type="text">Producto</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="status" data-sort-type="text">Estado</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="family" data-sort-type="text">Familia</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="subfamily" data-sort-type="text">Subfamilia</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="route" data-sort-type="text">Ruta</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="location" data-sort-type="text">Localidad</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="nextLocation" data-sort-type="text">Siguiente localidad</button></th>
-                        <th><button type="button" class="sort-button" data-sort-key="wipStart" data-sort-type="date">Inicio WIP</button></th>
-                        <th class="text-right"><button type="button" class="sort-button sort-button-right" data-sort-key="ageDays" data-sort-type="number">Días</button></th>
+                        <th>Orden</th>
+                        <th>Producto</th>
+                        <th>Subfamilia</th>
+                        <th>Paso actual</th>
+                        <th class="text-right">Piezas paso actual</th>
+                        <th>Paso siguiente</th>
+                        <th>Estado WIP</th>
+                        <th class="text-right">Días desde creación</th>
+                        <th>Fecha creación</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.Items.Any())
                     {
                         <tr>
-                            <td colspan="10" class="empty">No hay órdenes que coincidan con los filtros seleccionados.</td>
+                            <td colspan="9" class="empty">No hay órdenes que coincidan con los filtros seleccionados.</td>
                         </tr>
                     }
                     else
@@ -322,29 +335,49 @@
                         {
                             <tr data-wo="@item.WoNumber"
                                 data-product="@item.Product"
-                                data-status="@UiTextHelper.NormalizeStatus(item.Status)"
-                                data-family="@item.Family"
                                 data-subfamily="@item.Subfamily"
-                                data-route="@item.Route"
-                                data-location="@item.Location"
+                                data-current-step="@item.CurrentStep"
+                                data-current-step-qty="@(item.CurrentStepQty?.ToString() ?? string.Empty)"
+                                data-next-step="@item.NextStep"
                                 data-next-location="@item.NextLocation"
+                                data-wip-status-normalized="@item.WipStatusNormalized"
                                 data-wip-start="@(item.WipCreatedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty)"
                                 data-age-days="@(item.AgeDays?.ToString() ?? string.Empty)">
                                 <td>@item.WoNumber</td>
                                 <td>@item.Product</td>
-                                <td>@UiTextHelper.NormalizeStatus(item.Status)</td>
-                                <td>@item.Family</td>
                                 <td>@item.Subfamily</td>
-                                <td>@item.Route</td>
-                                <td>@item.Location</td>
-                                <td>@item.NextLocation</td>
-                                <td>@(item.WipCreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                <td>@item.CurrentStep</td>
+                                <td class="text-right">@(item.CurrentStepQty?.ToString() ?? "-")</td>
+                                <td>@item.NextStep</td>
+                                <td>@item.WipStatusNormalized</td>
                                 <td class="text-right">@(item.AgeDays?.ToString() ?? "-")</td>
+                                <td>@(item.WipCreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
                             </tr>
                         }
                     }
                 </tbody>
             </table>
+        </div>
+
+        <div class="engineering-grouped-card">
+            <h4>Agrupación por siguiente localidad y días desde creación</h4>
+            <div class="table-wrapper">
+                <table class="table engineering-orders-table" id="nextLocationAgeSummaryTable">
+                    <thead>
+                        <tr>
+                            <th>Siguiente localidad</th>
+                            <th class="text-right">Días desde creación</th>
+                            <th>Órdenes</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="empty">Sin datos agrupados.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -454,13 +487,15 @@
         (() => {
             const table = document.getElementById("filteredOrdersTable");
             const exportButton = document.getElementById("exportFilteredOrdersCsv");
+            const sortBar = document.getElementById("interactiveSortBar");
+            const activeSortCriteria = document.getElementById("activeSortCriteria");
+            const groupedTable = document.getElementById("nextLocationAgeSummaryTable");
             if (!table) return;
 
             const tbody = table.querySelector("tbody");
             const rows = Array.from(tbody.querySelectorAll("tr")).filter((row) => !row.querySelector(".empty"));
-            const sortButtons = Array.from(table.querySelectorAll(".sort-button"));
-            let currentSortKey = "";
-            let currentDirection = "asc";
+            const criterionButtons = Array.from(sortBar?.querySelectorAll(".criterion-button") ?? []);
+            const activeCriteria = [];
 
             const getValue = (row, key, type) => {
                 const attrName = key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
@@ -484,42 +519,141 @@
                 sortedRows.forEach((row) => tbody.appendChild(row));
             };
 
-            sortButtons.forEach((button) => {
+            const renderGroupedSummary = () => {
+                if (!groupedTable) return;
+
+                const groupedBody = groupedTable.querySelector("tbody");
+                if (!groupedBody) return;
+
+                const visibleRows = Array.from(tbody.querySelectorAll("tr")).filter((row) => !row.querySelector(".empty"));
+                if (!visibleRows.length) {
+                    groupedBody.innerHTML = '<tr><td colspan="4" class="empty">Sin datos agrupados.</td></tr>';
+                    return;
+                }
+
+                const groupedMap = new Map();
+                visibleRows.forEach((row) => {
+                    const nextLocation = (row.dataset.nextLocation || "Sin siguiente localidad").trim() || "Sin siguiente localidad";
+                    const ageRaw = (row.dataset.ageDays || "").trim();
+                    const ageDays = ageRaw === "" ? "-" : ageRaw;
+                    const key = `${nextLocation}|||${ageDays}`;
+
+                    if (!groupedMap.has(key)) {
+                        groupedMap.set(key, { nextLocation, ageDays, orders: [] });
+                    }
+
+                    groupedMap.get(key).orders.push(row.dataset.wo || "-");
+                });
+
+                const groupedRows = Array.from(groupedMap.values()).sort((a, b) => {
+                    if (a.nextLocation !== b.nextLocation) return a.nextLocation.localeCompare(b.nextLocation);
+
+                    const aNumber = Number(a.ageDays);
+                    const bNumber = Number(b.ageDays);
+                    const aSafe = Number.isNaN(aNumber) ? Number.MIN_SAFE_INTEGER : aNumber;
+                    const bSafe = Number.isNaN(bNumber) ? Number.MIN_SAFE_INTEGER : bNumber;
+                    return bSafe - aSafe;
+                });
+
+                groupedBody.innerHTML = "";
+                groupedRows.forEach((group) => {
+                    const summaryRow = document.createElement("tr");
+                    summaryRow.innerHTML = `
+                        <td>${group.nextLocation}</td>
+                        <td class="text-right">${group.ageDays}</td>
+                        <td>${group.orders.join(", ")}</td>
+                        <td class="text-right">${group.orders.length}</td>`;
+                    groupedBody.appendChild(summaryRow);
+                });
+            };
+
+            const applySort = () => {
+                if (!rows.length || !activeCriteria.length) {
+                    renderRows(rows);
+                    renderGroupedSummary();
+                    return;
+                }
+
+                const sortedRows = [...rows].sort((a, b) => {
+                    for (const criterion of activeCriteria) {
+                        const valueA = getValue(a, criterion.key, criterion.type);
+                        const valueB = getValue(b, criterion.key, criterion.type);
+
+                        if (valueA < valueB) return criterion.direction === "asc" ? -1 : 1;
+                        if (valueA > valueB) return criterion.direction === "asc" ? 1 : -1;
+                    }
+
+                    const woA = Number(a.dataset.wo || 0);
+                    const woB = Number(b.dataset.wo || 0);
+                    return woA - woB;
+                });
+
+                renderRows(sortedRows);
+                renderGroupedSummary();
+            };
+
+            const syncButtons = () => {
+                criterionButtons.forEach((button) => {
+                    const index = activeCriteria.findIndex((item) => item.key === button.dataset.criterionKey);
+                    button.classList.remove("active", "desc");
+                    button.removeAttribute("data-sort-order");
+
+                    if (index >= 0) {
+                        const criterion = activeCriteria[index];
+                        button.classList.add("active");
+                        if (criterion.direction === "desc") {
+                            button.classList.add("desc");
+                        }
+
+                        button.setAttribute("data-sort-order", `${index + 1}`);
+                    }
+                });
+
+                if (!activeSortCriteria) return;
+
+                if (!activeCriteria.length) {
+                    activeSortCriteria.textContent = "Sin criterios activos";
+                    return;
+                }
+
+                const text = activeCriteria
+                    .map((criterion, index) => {
+                        const button = criterionButtons.find((item) => item.dataset.criterionKey === criterion.key);
+                        const label = button?.textContent?.trim() ?? criterion.key;
+                        const directionLabel = criterion.direction === "asc" ? "ASC" : "DESC";
+                        return `${index + 1}. ${label} (${directionLabel})`;
+                    })
+                    .join("  |  ");
+
+                activeSortCriteria.textContent = `Criterios activos: ${text}`;
+            };
+
+            criterionButtons.forEach((button) => {
                 button.addEventListener("click", () => {
-                    const { sortKey, sortType } = button.dataset;
-                    if (!sortKey || !sortType || !rows.length) return;
+                    const key = button.dataset.criterionKey;
+                    const type = button.dataset.criterionType;
+                    if (!key || !type || !rows.length) return;
 
-                    if (currentSortKey === sortKey) {
-                        currentDirection = currentDirection === "asc" ? "desc" : "asc";
+                    const currentIndex = activeCriteria.findIndex((item) => item.key === key);
+                    if (currentIndex === -1) {
+                        activeCriteria.push({ key, type, direction: "asc" });
                     } else {
-                        currentSortKey = sortKey;
-                        currentDirection = "asc";
+                        const criterion = activeCriteria[currentIndex];
+                        if (criterion.direction === "asc") {
+                            criterion.direction = "desc";
+                        } else {
+                            activeCriteria.splice(currentIndex, 1);
+                        }
                     }
 
-                    const sortedRows = [...rows].sort((a, b) => {
-                        const valueA = getValue(a, sortKey, sortType);
-                        const valueB = getValue(b, sortKey, sortType);
-
-                        if (valueA < valueB) return currentDirection === "asc" ? -1 : 1;
-                        if (valueA > valueB) return currentDirection === "asc" ? 1 : -1;
-
-                        const woA = Number(a.dataset.wo || 0);
-                        const woB = Number(b.dataset.wo || 0);
-                        return woA - woB;
-                    });
-
-                    sortButtons.forEach((item) => {
-                        item.classList.remove("active", "desc");
-                    });
-
-                    button.classList.add("active");
-                    if (currentDirection === "desc") {
-                        button.classList.add("desc");
-                    }
-
-                    renderRows(sortedRows);
+                    syncButtons();
+                    applySort();
                 });
             });
+
+            syncButtons();
+            applySort();
+            renderGroupedSummary();
 
             if (exportButton) {
                 exportButton.addEventListener("click", () => {
@@ -527,20 +661,20 @@
                     const dataRows = Array.from(tbody.querySelectorAll("tr"));
                     if (!dataRows.length) return;
 
-                    const csvLines = [
-                        headers.join(","),
+                    const lines = [
+                        headers.join("\t"),
                         ...dataRows.map((row) => Array.from(row.children)
-                            .map((cell) => `"${cell.innerText.replace(/"/g, '""')}"`)
-                            .join(","))
+                            .map((cell) => cell.innerText.replace(/\s+/g, " ").trim())
+                            .join("\t"))
                     ];
 
-                    const blob = new Blob(["\uFEFF" + csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+                    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "application/vnd.ms-excel;charset=utf-8;" });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
                     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
 
                     link.href = url;
-                    link.download = `engineering-active-orders-${timestamp}.csv`;
+                    link.download = `engineering-active-orders-${timestamp}.xls`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
