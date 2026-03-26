@@ -56,6 +56,7 @@ public class LobbyService
         vm.RolesCount = CountTable(cn, "role");
 
         LoadActiveDevices(cn, vm);
+        LoadAdminLocations(cn, vm);
         LoadActiveUsers(cn, vm);
 
         return vm;
@@ -440,24 +441,79 @@ public class LobbyService
     private static void LoadActiveDevices(MySqlConnection cn, AdminLobbyVm vm)
     {
         using var cmd = new MySqlCommand(@"
-            SELECT d.device_uid, COALESCE(d.name, '') AS device_name, l.name AS location_name
+            SELECT d.id,
+                   d.device_uid,
+                   COALESCE(d.name, '') AS device_name,
+                   d.active,
+                   d.location_id,
+                   COALESCE(l.name, 'Sin localidad') AS location_name,
+                   COALESCE(u.username, 'Sin cuenta asociada') AS account_username
             FROM devices d
-            JOIN location l ON l.id = d.location_id
-            WHERE d.active = 1
-            ORDER BY l.name, d.device_uid", cn);
+            LEFT JOIN location l ON l.id = d.location_id
+            LEFT JOIN user u ON u.id = (
+                SELECT wse2.user_id
+                FROM wip_step_execution wse2
+                WHERE wse2.device_id = d.id
+                  AND wse2.user_id IS NOT NULL
+                ORDER BY wse2.create_at DESC, wse2.id DESC
+                LIMIT 1
+            )
+            ORDER BY d.active DESC, location_name, d.device_uid", cn);
 
         using var rd = cmd.ExecuteReader();
         while (rd.Read())
         {
+            var locationIdOrdinal = rd.GetOrdinal("location_id");
+
             vm.ActiveDevices.Add(new AdminLobbyVm.ActiveDeviceVm
             {
+                DeviceId = rd.GetUInt32("id"),
                 DeviceUid = rd.GetString("device_uid"),
                 Name = rd.GetString("device_name"),
-                Location = rd.GetString("location_name")
+                LocationId = rd.IsDBNull(locationIdOrdinal) ? null : rd.GetUInt32(locationIdOrdinal),
+                Location = rd.GetString("location_name"),
+                AccountUsername = rd.GetString("account_username"),
+                Active = rd.GetBoolean("active")
             });
         }
 
-        vm.ActiveDevicesCount = vm.ActiveDevices.Count;
+        vm.ActiveDevicesCount = vm.ActiveDevices.Count(x => x.Active);
+    }
+
+    private static void LoadAdminLocations(MySqlConnection cn, AdminLobbyVm vm)
+    {
+        using var cmd = new MySqlCommand(@"
+            SELECT id, name
+            FROM location
+            WHERE active = 1
+            ORDER BY name", cn);
+
+        using var rd = cmd.ExecuteReader();
+        while (rd.Read())
+        {
+            vm.Locations.Add(new AdminLobbyVm.LocationOptionVm
+            {
+                Id = rd.GetUInt32("id"),
+                Name = rd.GetString("name")
+            });
+        }
+    }
+
+    public bool UpdateDeviceLocationFromAdminDashboard(uint deviceId, uint locationId)
+    {
+        using var cn = new MySqlConnection(_conn);
+        cn.Open();
+
+        using var cmd = new MySqlCommand(@"
+            UPDATE devices d
+            JOIN location l ON l.id = @locationId AND l.active = 1
+            SET d.location_id = l.id
+            WHERE d.id = @deviceId", cn);
+
+        cmd.Parameters.AddWithValue("@deviceId", deviceId);
+        cmd.Parameters.AddWithValue("@locationId", locationId);
+
+        return cmd.ExecuteNonQuery() > 0;
     }
 
     private static void LoadActiveUsers(MySqlConnection cn, AdminLobbyVm vm)
