@@ -37,6 +37,13 @@ public class GerenciaController : Controller
         return View($"{ViewBase}DiscreteDay.cshtml", vm);
     }
 
+    [HttpGet("PanelesDiariosDiscretos")]
+    public IActionResult DiscreteDailyPanels()
+    {
+        var vm = _svc.GetDiscreteDailyPanels();
+        return View($"{ViewBase}DiscreteDailyPanels.cshtml", vm);
+    }
+
     [HttpGet("CausasScrap")]
     public IActionResult ScrapCauses(DateTime? day, string? woNumber, string? product)
     {

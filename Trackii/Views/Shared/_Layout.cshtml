@@ -64,6 +64,11 @@
                         <span>Mapa de discretos</span>
                     </a>
 
+                    <a asp-controller="Gerencia" asp-action="DiscreteDailyPanels" class="@(currentController == "Gerencia" && currentAction == "DiscreteDailyPanels" ? "active" : string.Empty)">
+                        <i class="fa-solid fa-table-cells-large"></i>
+                        <span>Paneles diarios discretos</span>
+                    </a>
+
                     <a asp-controller="Gerencia" asp-action="ActiveOrders" class="@(currentController == "Gerencia" && currentAction == "ActiveOrders" ? "active" : string.Empty)">
                         <i class="fa-solid fa-list-check"></i>
                         <span>Órdenes activas</span>

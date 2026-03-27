@@ -157,6 +157,58 @@ public class GerenciaService
         return vm;
     }
 
+    public GerenciaDiscreteDailyPanelsVm GetDiscreteDailyPanels()
+    {
+        var vm = new GerenciaDiscreteDailyPanelsVm
+        {
+            Day = DateTime.UtcNow.Date
+        };
+
+        using var cn = new MySqlConnection(_conn);
+        cn.Open();
+
+        using var cmd = new MySqlCommand(@"
+            WITH step_metrics AS (
+                SELECT wse.*,
+                       GREATEST(
+                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           0
+                       ) AS calc_scrap
+                FROM wip_step_execution wse
+            ),
+            daily_location AS (
+                SELECT sm.location_id,
+                       COUNT(DISTINCT wo.id) AS orders_count,
+                       COALESCE(SUM(sm.qty_in - sm.calc_scrap), 0) AS qty_produced
+                FROM step_metrics sm
+                JOIN wip_item wip ON wip.id = sm.wip_item_id
+                JOIN work_order wo ON wo.id = wip.wo_order_id
+                WHERE DATE(sm.create_at) = @day
+                GROUP BY sm.location_id
+            )
+            SELECT l.name AS location_name,
+                   COALESCE(dl.orders_count, 0) AS orders_count,
+                   COALESCE(dl.qty_produced, 0) AS qty_produced
+            FROM location l
+            LEFT JOIN daily_location dl ON dl.location_id = l.id
+            ORDER BY l.name", cn);
+
+        cmd.Parameters.AddWithValue("@day", vm.Day);
+
+        using var rd = cmd.ExecuteReader();
+        while (rd.Read())
+        {
+            vm.Locations.Add(new DailyLocationPanelVm
+            {
+                Location = rd.GetString("location_name"),
+                OrdersCount = Convert.ToInt32(rd.GetInt64("orders_count")),
+                PiecesTotal = Convert.ToInt32(rd.GetInt64("qty_produced"))
+            });
+        }
+
+        return vm;
+    }
+
     public GerenciaScrapCausesVm GetScrapCauses(DateTime? day, string? woNumber, string? product)
     {
         var vm = new GerenciaScrapCausesVm

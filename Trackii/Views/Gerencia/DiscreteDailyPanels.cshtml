@@ -1,0 +1,67 @@
+@model Trackii.Models.Gerencia.GerenciaDiscreteDailyPanelsVm
+@{
+    ViewData["Title"] = "Paneles diarios de discretos";
+}
+
+<div class="dashboard">
+    <div class="page-header">
+        <div>
+            <h2>Paneles diarios por localidad</h2>
+            <p class="subtitle">Vista diaria fija para @Model.Day.ToString("yyyy-MM-dd") (UTC), sin seleccionar fecha manualmente.</p>
+        </div>
+    </div>
+
+    <section class="cards-grid daily-panels-summary">
+        <article class="kpi-card">
+            <span class="kpi-label">Órdenes visibles</span>
+            <strong class="kpi-value">@Model.TotalOrders.ToString("N0")</strong>
+        </article>
+        <article class="kpi-card">
+            <span class="kpi-label">Piezas totales</span>
+            <strong class="kpi-value">@Model.TotalPieces.ToString("N0")</strong>
+        </article>
+    </section>
+
+    <div class="card daily-panels-card">
+        <div class="card-heading">
+            <h3>Localidades registradas</h3>
+            <span class="chip chip-muted">@Model.Locations.Count localidades</span>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Localidad</th>
+                        <th class="text-right">Cantidad de órdenes</th>
+                        <th class="text-right">Cantidad de piezas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Locations.Any())
+                    {
+                        <tr><td colspan="3" class="empty">No se encontraron localidades.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model.Locations)
+                        {
+                            <tr>
+                                <td>@row.Location</td>
+                                <td class="text-right">@row.OrdersCount.ToString("N0")</td>
+                                <td class="text-right">@row.PiecesTotal.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total general</th>
+                        <th class="text-right">@Model.TotalOrders.ToString("N0")</th>
+                        <th class="text-right">@Model.TotalPieces.ToString("N0")</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>

@@ -30,6 +30,21 @@ public class GerenciaDayDetailVm
     public List<DailyOrderDetailVm> Orders { get; } = new();
 }
 
+public class GerenciaDiscreteDailyPanelsVm
+{
+    public DateTime Day { get; set; }
+    public List<DailyLocationPanelVm> Locations { get; } = new();
+    public int TotalOrders => Locations.Sum(item => item.OrdersCount);
+    public int TotalPieces => Locations.Sum(item => item.PiecesTotal);
+}
+
+public class DailyLocationPanelVm
+{
+    public string Location { get; set; } = string.Empty;
+    public int OrdersCount { get; set; }
+    public int PiecesTotal { get; set; }
+}
+
 public class DailyOrderDetailVm
 {
     public string WoNumber { get; set; } = string.Empty;
