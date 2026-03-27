@@ -97,10 +97,20 @@
             }
             else
             {
-                <ul class="compact-list">
+                <ul class="new-orders-list delayed-orders-list">
                     @foreach (var order in Model.DelayedOrders)
                     {
-                        <li><strong>@order.WoNumber</strong> · @order.Product · @order.DaysDelayed días</li>
+                        <li class="new-order-item delayed-order-item">
+                            <div class="new-order-header">
+                                <strong>#@order.WoNumber</strong>
+                                <span class="new-order-status delayed-status">@order.DaysDelayed días</span>
+                            </div>
+                            <p class="new-order-product">@order.Product</p>
+                            <div class="new-order-meta">
+                                <span><i class="fa-solid fa-location-dot"></i> @(string.IsNullOrWhiteSpace(order.CurrentLocation) ? "Sin localidad" : order.CurrentLocation)</span>
+                                <span><i class="fa-solid fa-hourglass-half"></i> @UiTextHelper.NormalizeStatus(order.Status)</span>
+                            </div>
+                        </li>
                     }
                 </ul>
             }
@@ -161,6 +171,12 @@
         const orderValues = @Html.Raw(JsonSerializer.Serialize(Model.OrderStatusChart.Values));
         const productionLabels = @Html.Raw(JsonSerializer.Serialize(Model.ProductionByLocationChart.Labels));
         const productionValues = @Html.Raw(JsonSerializer.Serialize(Model.ProductionByLocationChart.Values));
+        const topProduction = productionLabels
+            .map((label, index) => ({ label, value: productionValues[index] ?? 0 }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 10);
+        const productionTopLabels = topProduction.map((item) => item.label);
+        const productionTopValues = topProduction.map((item) => item.value);
         const pieContainer = document.getElementById('ordersPieChart');
         const barContainer = document.getElementById('productionChart');
 
@@ -214,21 +230,22 @@
                 },
                 series: [{
                     name: 'Piezas producidas',
-                    data: productionValues
+                    data: productionTopValues
                 }],
                 colors: ['#2f80ed'],
                 plotOptions: {
                     bar: {
                         borderRadius: 7,
-                        columnWidth: '52%',
-                        distributed: true
+                        columnWidth: '60%',
+                        distributed: false
                     }
                 },
                 dataLabels: { enabled: false },
+                legend: { show: false },
                 xaxis: {
-                    categories: productionLabels,
+                    categories: productionTopLabels,
                     labels: {
-                        rotate: -35,
+                        rotate: 0,
                         trim: true,
                         style: { colors: '#4d6283', fontSize: '12px', fontWeight: 600 }
                     },

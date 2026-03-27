@@ -243,6 +243,16 @@
     background: rgba(63, 146, 255, 0.18);
 }
 
+.delayed-orders-list .delayed-order-item {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 239, 243, 0.92));
+    border-color: rgba(212, 92, 120, 0.2);
+}
+
+.delayed-status {
+    color: #8a2446;
+    background: rgba(238, 95, 137, 0.19);
+}
+
 .new-order-product {
     margin: 0 0 4px;
     font-size: .9rem;
