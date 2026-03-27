@@ -18,9 +18,7 @@
         .Select(subfamily => new
         {
             Subfamily = subfamily,
-            Pieces = Model.Matrix.Rows.SelectMany(r => r.Cells).Where(c => c.Subfamily == subfamily).Sum(c => c.Qty),
-            Scrap = Model.Matrix.Rows.SelectMany(r => r.Cells).Where(c => c.Subfamily == subfamily).Sum(c => c.Scrap),
-            Orders = Model.Matrix.Rows.SelectMany(r => r.Cells).Where(c => c.Subfamily == subfamily).Sum(c => c.OrdersCount)
+            Pieces = Model.Matrix.Rows.SelectMany(r => r.Cells).Where(c => c.Subfamily == subfamily).Sum(c => c.Qty)
         })
         .OrderByDescending(x => x.Pieces)
         .Take(8)
@@ -51,36 +49,19 @@
     <div class="page-header error-causes-header">
         <div>
             <h2>Mapa de Discretos</h2>
-            <p class="subtitle">Vista renovada con métricas clave, filtros de análisis y desglose por subfamilia/producto.</p>
+            <p class="subtitle">Vista renovada con métricas clave y paneles separados por contexto operativo.</p>
         </div>
         <a asp-controller="Gerencia" asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver</a>
     </div>
 
-    <section class="error-kpis" aria-label="KPIs del mapa de discretos">
-        <article class="kpi-highlight apple-card error-kpi-card">
-            <span class="kpi-label">Piezas producidas</span>
-            <strong class="kpi-value">@totalPieces.ToString("N0")</strong>
-            <small>En el período seleccionado.</small>
-        </article>
-        <article class="kpi-highlight apple-card error-kpi-card delay">
-            <span class="kpi-label">Scrap acumulado</span>
-            <strong class="kpi-value">@totalScrap.ToString("N0")</strong>
-            <small>Para contexto de rendimiento.</small>
-        </article>
-        <article class="kpi-highlight apple-card error-kpi-card incoming">
-            <span class="kpi-label">Órdenes contabilizadas</span>
-            <strong class="kpi-value">@totalOrders.ToString("N0")</strong>
-            <small>Conteo agregado por celda.</small>
-        </article>
-        <article class="kpi-highlight apple-card error-kpi-card">
-            <span class="kpi-label">Productos contabilizados</span>
-            <strong class="kpi-value">@totalProducts.ToString("N0")</strong>
-            <small>Variedad acumulada por subfamilia/día.</small>
-        </article>
-    </section>
+    <div class="card gerencia-weekly-card apple-card error-causes-card">
+        <div class="card-heading">
+            <h3>Tabla completa de discretos</h3>
+            <span class="chip">Primaria</span>
+        </div>
 
-    <div class="card apple-card error-causes-card">
-        <form method="get" class="filters discrete-filters discrete-filters-enhanced">
+        <form method="get" class="filters discrete-filters discrete-filters-enhanced discrete-map-attached-filters">
+            <input type="hidden" name="selectedSubfamily" value="@Model.SelectedSubfamily" />
             <div class="discrete-filter-grid">
                 <div class="discrete-filter-field discrete-filter-main">
                     <label for="periodType">Tipo de período</label>
@@ -89,7 +70,6 @@
                         <option value="month" selected="@(Model.PeriodType == "month")">Mes</option>
                         <option value="custom" selected="@(Model.PeriodType == "custom")">Rango personalizado</option>
                     </select>
-                    <small>Agrupación principal del mapa.</small>
                 </div>
 
                 <div class="discrete-filter-field">
@@ -99,25 +79,6 @@
                         <option value="products" selected="@(Model.MetricView == "products")">Productos</option>
                         <option value="orders" selected="@(Model.MetricView == "orders")">Órdenes</option>
                     </select>
-                    <small>Define qué valor principal mostrar en cada celda.</small>
-                </div>
-
-                <div class="discrete-filter-field">
-                    <label for="selectedSubfamily">Subfamilia para top productos</label>
-                    <select id="selectedSubfamily" name="selectedSubfamily">
-                        @if (!Model.Matrix.Subfamilies.Any())
-                        {
-                            <option value="">Sin subfamilias</option>
-                        }
-                        else
-                        {
-                            foreach (var subfamily in Model.Matrix.Subfamilies)
-                            {
-                                <option value="@subfamily" selected="@(Model.SelectedSubfamily == subfamily)">@subfamily</option>
-                            }
-                        }
-                    </select>
-                    <small>Controla la sección de productos más fabricados.</small>
                 </div>
             </div>
 
@@ -125,45 +86,28 @@
                 <div class="discrete-filter-field period-field period-week" data-period="week">
                     <label for="weekValue">Semana ISO</label>
                     <input id="weekValue" type="week" name="weekValue" value="@Model.WeekValue" />
-                    <small>Ejemplo: semana 13 del año 2026.</small>
                 </div>
 
                 <div class="discrete-filter-field period-field period-month" data-period="month">
                     <label for="monthValue">Mes</label>
                     <input id="monthValue" type="month" name="monthValue" value="@Model.MonthValue" />
-                    <small>Selecciona el mes completo a consultar.</small>
                 </div>
 
                 <div class="discrete-filter-field period-field period-custom" data-period="custom">
                     <label for="fromDate">Desde</label>
                     <input id="fromDate" type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
-                    <small>Fecha inicial del rango personalizado.</small>
                 </div>
 
                 <div class="discrete-filter-field period-field period-custom" data-period="custom">
                     <label for="toDate">Hasta</label>
                     <input id="toDate" type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
-                    <small>Fecha final del rango personalizado.</small>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary">Aplicar análisis</button>
+            <button type="submit" class="btn btn-primary">Actualizar tabla</button>
         </form>
-    </div>
 
-    <div class="chart-grid error-causes-grid">
-        <div class="card chart-card apple-card error-causes-card">
-            <div class="card-heading"><h3>Tendencia diaria</h3><span class="chip">Piezas vs scrap</span></div>
-            <div id="discreteTrendChart" class="chart-host chart-host-lg"></div>
-        </div>
-        <div class="card chart-card apple-card error-causes-card">
-            <div class="card-heading"><h3>Top subfamilias por piezas</h3><span class="chip chip-muted">Ranking</span></div>
-            <div id="subfamilyQtyChart" class="chart-host chart-host-lg"></div>
-        </div>
-    </div>
-
-    <div class="card gerencia-weekly-card apple-card error-causes-card">
-        <p class="subtitle">Período: <strong>@Model.Matrix.StartDate.ToString("yyyy-MM-dd")</strong> a <strong>@Model.Matrix.EndDate.ToString("yyyy-MM-dd")</strong>. Métrica principal visible: <strong>@metricLabel</strong>.</p>
+        <p class="subtitle">Período: <strong>@Model.Matrix.StartDate.ToString("yyyy-MM-dd")</strong> a <strong>@Model.Matrix.EndDate.ToString("yyyy-MM-dd")</strong>. Métrica visible: <strong>@metricLabel</strong>.</p>
         <div class="table-wrapper">
             <table class="table gerencia-weekly-table">
                 <thead>
@@ -198,35 +142,104 @@
         </div>
     </div>
 
+    <section class="error-kpis" aria-label="KPIs del mapa de discretos">
+        <article class="kpi-highlight apple-card error-kpi-card">
+            <span class="kpi-label">Piezas producidas</span>
+            <strong class="kpi-value">@totalPieces.ToString("N0")</strong>
+            <small>En el período seleccionado.</small>
+        </article>
+        <article class="kpi-highlight apple-card error-kpi-card delay">
+            <span class="kpi-label">Scrap acumulado</span>
+            <strong class="kpi-value">@totalScrap.ToString("N0")</strong>
+            <small>Para contexto de rendimiento.</small>
+        </article>
+        <article class="kpi-highlight apple-card error-kpi-card incoming">
+            <span class="kpi-label">Órdenes contabilizadas</span>
+            <strong class="kpi-value">@totalOrders.ToString("N0")</strong>
+            <small>Conteo agregado por celda.</small>
+        </article>
+        <article class="kpi-highlight apple-card error-kpi-card">
+            <span class="kpi-label">Productos contabilizados</span>
+            <strong class="kpi-value">@totalProducts.ToString("N0")</strong>
+            <small>Variedad acumulada por subfamilia/día.</small>
+        </article>
+    </section>
+
     <div class="chart-grid error-causes-grid">
         <div class="card chart-card apple-card error-causes-card">
-            <div class="card-heading"><h3>Top productos por subfamilia</h3><span class="chip">@Model.SelectedSubfamily</span></div>
-            <div id="subfamilyProductsChart" class="chart-host chart-host-lg"></div>
+            <div class="card-heading"><h3>Tendencia diaria</h3><span class="chip">Piezas vs scrap</span></div>
+            <div id="discreteTrendChart" class="chart-host chart-host-lg"></div>
         </div>
-        <div class="card apple-card error-causes-card">
-            <div class="card-heading"><h3>Productos más fabricados</h3><span class="chip chip-muted">Detalle</span></div>
-            <div class="table-wrapper table-wrapper-tall">
-                <table class="table">
-                    <thead><tr><th>Producto</th><th>Piezas</th><th>Scrap</th><th>Órdenes</th></tr></thead>
-                    <tbody>
-                    @if (!Model.SubfamilyTopProducts.Any())
+        <div class="card chart-card apple-card error-causes-card">
+            <div class="card-heading"><h3>Top subfamilias por piezas</h3><span class="chip chip-muted">Ranking</span></div>
+            <div id="subfamilyQtyChart" class="chart-host chart-host-lg"></div>
+        </div>
+    </div>
+
+    <div class="card apple-card error-causes-card">
+        <div class="card-heading">
+            <h3>Top productos por subfamilia</h3>
+            <span class="chip">Sección dedicada</span>
+        </div>
+
+        <form method="get" class="filters discrete-filters discrete-filters-enhanced discrete-map-attached-filters discrete-subfamily-filter">
+            <input type="hidden" name="periodType" value="@Model.PeriodType" />
+            <input type="hidden" name="metricView" value="@Model.MetricView" />
+            <input type="hidden" name="weekValue" value="@Model.WeekValue" />
+            <input type="hidden" name="monthValue" value="@Model.MonthValue" />
+            <input type="hidden" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
+            <input type="hidden" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
+
+            <div class="discrete-filter-field discrete-filter-main">
+                <label for="selectedSubfamily">Subfamilia para top productos</label>
+                <select id="selectedSubfamily" name="selectedSubfamily">
+                    @if (!Model.Matrix.Subfamilies.Any())
                     {
-                        <tr><td colspan="4" class="empty">No hay datos para la subfamilia seleccionada.</td></tr>
+                        <option value="">Sin subfamilias</option>
                     }
                     else
                     {
-                        @foreach (var product in Model.SubfamilyTopProducts)
+                        foreach (var subfamily in Model.Matrix.Subfamilies)
                         {
-                            <tr>
-                                <td>@product.Product</td>
-                                <td><span class="badge-metric badge-metric-alt">@product.Qty.ToString("N0")</span></td>
-                                <td>@product.Scrap.ToString("N0")</td>
-                                <td>@product.Orders.ToString("N0")</td>
-                            </tr>
+                            <option value="@subfamily" selected="@(Model.SelectedSubfamily == subfamily)">@subfamily</option>
                         }
                     }
-                    </tbody>
-                </table>
+                </select>
+                <small>Este filtro solo afecta este subcomponente de top productos.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Actualizar top productos</button>
+        </form>
+
+        <div class="chart-grid error-causes-grid">
+            <div class="card chart-card apple-card error-causes-card">
+                <div class="card-heading"><h3>Gráfico de productos</h3><span class="chip chip-muted">@Model.SelectedSubfamily</span></div>
+                <div id="subfamilyProductsChart" class="chart-host chart-host-lg"></div>
+            </div>
+            <div class="card apple-card error-causes-card">
+                <div class="card-heading"><h3>Productos más fabricados</h3><span class="chip chip-muted">Detalle</span></div>
+                <div class="table-wrapper table-wrapper-tall">
+                    <table class="table">
+                        <thead><tr><th>Producto</th><th>Piezas</th><th>Scrap</th><th>Órdenes</th></tr></thead>
+                        <tbody>
+                        @if (!Model.SubfamilyTopProducts.Any())
+                        {
+                            <tr><td colspan="4" class="empty">No hay datos para la subfamilia seleccionada.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var product in Model.SubfamilyTopProducts)
+                            {
+                                <tr>
+                                    <td>@product.Product</td>
+                                    <td><span class="badge-metric badge-metric-alt">@product.Qty.ToString("N0")</span></td>
+                                    <td>@product.Scrap.ToString("N0")</td>
+                                    <td>@product.Orders.ToString("N0")</td>
+                                </tr>
+                            }
+                        }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
