@@ -284,18 +284,46 @@ public class GerenciaService
             ORDER BY qty DESC, events DESC
             LIMIT 10", cn);
 
-        using var rd = cmd.ExecuteReader();
-        while (rd.Read())
         {
-            var cause = new ScrapCauseVm
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
             {
-                Cause = rd.GetString("cause"),
-                Qty = Convert.ToInt32(rd.GetInt64("qty")),
-                Events = Convert.ToInt32(rd.GetInt64("events"))
+                var cause = new ScrapCauseVm
+                {
+                    Cause = rd.GetString("cause"),
+                    Qty = Convert.ToInt32(rd.GetInt64("qty")),
+                    Events = Convert.ToInt32(rd.GetInt64("events"))
+                };
+                vm.Causes.Add(cause);
+                vm.CausesChart.Labels.Add(cause.Cause);
+                vm.CausesChart.Values.Add(cause.Qty);
+            }
+        }
+
+        using var locationCmd = new MySqlCommand(@"
+            SELECT l.name AS location_name,
+                   COALESCE(SUM(sl.qty), 0) AS qty,
+                   COUNT(*) AS events
+            FROM scrap_log sl
+            JOIN route_step rs ON rs.id = sl.route_step_id
+            JOIN location l ON l.id = rs.location_id
+            GROUP BY l.id, l.name
+            ORDER BY qty DESC, events DESC
+            LIMIT 10", cn);
+
+        using var locationRd = locationCmd.ExecuteReader();
+        while (locationRd.Read())
+        {
+            var row = new ScrapLocationVm
+            {
+                Location = locationRd.GetString("location_name"),
+                Qty = Convert.ToInt32(locationRd.GetInt64("qty")),
+                Events = Convert.ToInt32(locationRd.GetInt64("events"))
             };
-            vm.Causes.Add(cause);
-            vm.CausesChart.Labels.Add(cause.Cause);
-            vm.CausesChart.Values.Add(cause.Qty);
+
+            vm.Locations.Add(row);
+            vm.LocationScrapChart.Labels.Add(row.Location);
+            vm.LocationScrapChart.Values.Add(row.Qty);
         }
 
         return vm;

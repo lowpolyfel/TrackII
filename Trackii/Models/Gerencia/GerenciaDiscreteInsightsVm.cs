@@ -76,4 +76,13 @@ public class GerenciaErrorCausesVm
 {
     public ChartVm CausesChart { get; } = new();
     public List<ScrapCauseVm> Causes { get; } = new();
+    public ChartVm LocationScrapChart { get; } = new();
+    public List<ScrapLocationVm> Locations { get; } = new();
+}
+
+public class ScrapLocationVm
+{
+    public string Location { get; set; } = string.Empty;
+    public int Qty { get; set; }
+    public int Events { get; set; }
 }
