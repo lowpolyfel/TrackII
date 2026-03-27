@@ -433,3 +433,17 @@
         align-items: stretch;
     }
 }
+
+.daily-panels-summary {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.daily-panels-card {
+    border: 1px solid rgba(23, 88, 177, 0.12);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.97), rgba(243, 248, 255, 0.94));
+}
+
+.daily-panels-card .table tfoot th {
+    background: #edf3fb;
+    color: #233758;
+}
