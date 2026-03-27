@@ -43,6 +43,16 @@
         "products" => "Productos",
         _ => "Piezas"
     };
+
+    int RowMetricTotal(Trackii.Models.Gerencia.WeeklyOutputDayRowVm row)
+    {
+        return Model.MetricView switch
+        {
+            "orders" => row.Cells.Sum(c => c.OrdersCount),
+            "products" => row.Cells.Sum(c => c.ProductsCount),
+            _ => row.TotalQty
+        };
+    }
 }
 
 <div class="dashboard">
@@ -60,52 +70,54 @@
             <span class="chip">Primaria</span>
         </div>
 
-        <form method="get" class="filters discrete-filters discrete-filters-enhanced discrete-map-attached-filters">
-            <input type="hidden" name="selectedSubfamily" value="@Model.SelectedSubfamily" />
-            <div class="discrete-filter-grid">
-                <div class="discrete-filter-field discrete-filter-main">
-                    <label for="periodType">Tipo de período</label>
-                    <select id="periodType" name="periodType">
-                        <option value="week" selected="@(Model.PeriodType == "week")">Semana</option>
-                        <option value="month" selected="@(Model.PeriodType == "month")">Mes</option>
-                        <option value="custom" selected="@(Model.PeriodType == "custom")">Rango personalizado</option>
-                    </select>
+        <div class="discrete-table-toolbar">
+            <form method="get" class="filters discrete-filters discrete-filters-enhanced discrete-map-attached-filters discrete-side-panel">
+                <input type="hidden" name="selectedSubfamily" value="@Model.SelectedSubfamily" />
+                <div class="discrete-filter-grid">
+                    <div class="discrete-filter-field discrete-filter-main">
+                        <label for="periodType">Tipo de período</label>
+                        <select id="periodType" name="periodType">
+                            <option value="week" selected="@(Model.PeriodType == "week")">Semana</option>
+                            <option value="month" selected="@(Model.PeriodType == "month")">Mes</option>
+                            <option value="custom" selected="@(Model.PeriodType == "custom")">Rango personalizado</option>
+                        </select>
+                    </div>
+
+                    <div class="discrete-filter-field">
+                        <label for="metricView">Métrica en tabla</label>
+                        <select id="metricView" name="metricView">
+                            <option value="pieces" selected="@(Model.MetricView == "pieces")">Piezas</option>
+                            <option value="products" selected="@(Model.MetricView == "products")">Productos</option>
+                            <option value="orders" selected="@(Model.MetricView == "orders")">Órdenes</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="discrete-filter-field">
-                    <label for="metricView">Métrica en tabla</label>
-                    <select id="metricView" name="metricView">
-                        <option value="pieces" selected="@(Model.MetricView == "pieces")">Piezas</option>
-                        <option value="products" selected="@(Model.MetricView == "products")">Productos</option>
-                        <option value="orders" selected="@(Model.MetricView == "orders")">Órdenes</option>
-                    </select>
-                </div>
-            </div>
+                <div class="discrete-filter-grid">
+                    <div class="discrete-filter-field period-field period-week" data-period="week">
+                        <label for="weekValue">Semana ISO</label>
+                        <input id="weekValue" type="week" name="weekValue" value="@Model.WeekValue" />
+                    </div>
 
-            <div class="discrete-filter-grid">
-                <div class="discrete-filter-field period-field period-week" data-period="week">
-                    <label for="weekValue">Semana ISO</label>
-                    <input id="weekValue" type="week" name="weekValue" value="@Model.WeekValue" />
-                </div>
+                    <div class="discrete-filter-field period-field period-month" data-period="month">
+                        <label for="monthValue">Mes</label>
+                        <input id="monthValue" type="month" name="monthValue" value="@Model.MonthValue" />
+                    </div>
 
-                <div class="discrete-filter-field period-field period-month" data-period="month">
-                    <label for="monthValue">Mes</label>
-                    <input id="monthValue" type="month" name="monthValue" value="@Model.MonthValue" />
-                </div>
+                    <div class="discrete-filter-field period-field period-custom" data-period="custom">
+                        <label for="fromDate">Desde</label>
+                        <input id="fromDate" type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
+                    </div>
 
-                <div class="discrete-filter-field period-field period-custom" data-period="custom">
-                    <label for="fromDate">Desde</label>
-                    <input id="fromDate" type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
+                    <div class="discrete-filter-field period-field period-custom" data-period="custom">
+                        <label for="toDate">Hasta</label>
+                        <input id="toDate" type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
+                    </div>
                 </div>
 
-                <div class="discrete-filter-field period-field period-custom" data-period="custom">
-                    <label for="toDate">Hasta</label>
-                    <input id="toDate" type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Actualizar tabla</button>
-        </form>
+                <button type="submit" class="btn btn-primary">Actualizar tabla</button>
+            </form>
+        </div>
 
         <p class="subtitle">Período: <strong>@Model.Matrix.StartDate.ToString("yyyy-MM-dd")</strong> a <strong>@Model.Matrix.EndDate.ToString("yyyy-MM-dd")</strong>. Métrica visible: <strong>@metricLabel</strong>.</p>
         <div class="table-wrapper">
@@ -117,8 +129,11 @@
                         {
                             <th>@subfamily</th>
                         }
-                        <th>Total piezas</th>
-                        <th>Total scrap</th>
+                        <th>Total @metricLabel.ToLowerInvariant()</th>
+                        @if (Model.MetricView == "pieces")
+                        {
+                            <th>Total scrap</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -130,11 +145,17 @@
                         {
                             <td>
                                 <span class="weekly-pill qty">@MetricValue(cell)</span>
-                                <span class="weekly-pill scrap">@cell.Scrap.ToString("N0")</span>
+                                @if (Model.MetricView == "pieces")
+                                {
+                                    <span class="weekly-pill scrap">@cell.Scrap.ToString("N0")</span>
+                                }
                             </td>
                         }
-                        <td>@row.TotalQty.ToString("N0")</td>
-                        <td>@row.TotalScrap.ToString("N0")</td>
+                        <td>@RowMetricTotal(row).ToString("N0")</td>
+                        @if (Model.MetricView == "pieces")
+                        {
+                            <td>@row.TotalScrap.ToString("N0")</td>
+                        }
                     </tr>
                 }
                 </tbody>
