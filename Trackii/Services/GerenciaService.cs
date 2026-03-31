@@ -1139,9 +1139,17 @@ public class GerenciaService
 
         switch (periodType)
         {
+            case "day" when fromDate.HasValue:
+                start = fromDate.Value.Date;
+                end = start;
+                break;
             case "month" when !string.IsNullOrWhiteSpace(monthValue) && DateTime.TryParse($"{monthValue}-01", out var monthDate):
                 start = new DateTime(monthDate.Year, monthDate.Month, 1);
                 end = start.AddMonths(1).AddDays(-1);
+                break;
+            case "historic":
+                start = new DateTime(2020, 1, 1);
+                end = today;
                 break;
             case "custom" when fromDate.HasValue && toDate.HasValue:
                 start = fromDate.Value.Date;

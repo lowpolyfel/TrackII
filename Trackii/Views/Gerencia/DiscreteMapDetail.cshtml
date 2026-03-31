@@ -15,32 +15,68 @@
     </div>
 
     <div class="card">
-        <form method="get" class="filters discrete-filters" asp-action="DiscreteMapDetail">
+        <form method="get" class="filters discrete-filters" asp-action="DiscreteMapDetail" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end;">
             <input type="hidden" name="location" value="@Model.Location" />
             <input type="hidden" name="subfamily" value="@Model.Subfamily" />
-            <input type="hidden" name="periodType" value="@Model.PeriodType" />
-            <input type="hidden" name="weekValue" value="@Model.WeekValue" />
-            <input type="hidden" name="monthValue" value="@Model.MonthValue" />
-            <input type="hidden" name="fromDate" value="@(Model.StartDate.ToString("yyyy-MM-dd"))" />
-            <input type="hidden" name="toDate" value="@(Model.EndDate.ToString("yyyy-MM-dd"))" />
-            <label for="day">Ver solo día:</label>
-            <input id="day" type="date" name="day" value="@(Model.Day?.ToString("yyyy-MM-dd"))" />
+
+            <div class="discrete-filter-field" style="min-width:220px;">
+                <label for="periodType">Tipo de período</label>
+                <select id="periodType" name="periodType">
+                    <option value="day" selected="@(Model.PeriodType == "day")">Día</option>
+                    <option value="week" selected="@(Model.PeriodType == "week")">Semana</option>
+                    <option value="month" selected="@(Model.PeriodType == "month")">Mes</option>
+                    <option value="custom" selected="@(Model.PeriodType == "custom")">Rango personalizado</option>
+                    <option value="historic" selected="@(Model.PeriodType == "historic")">Histórico</option>
+                </select>
+            </div>
+
+            <div class="discrete-filter-field period-field period-day" data-period="day">
+                <label for="dayStart">Día</label>
+                <input id="dayStart" type="date" name="fromDate" value="@(Model.StartDate.ToString("yyyy-MM-dd"))" />
+            </div>
+
+            <div class="discrete-filter-field period-field period-week" data-period="week">
+                <label for="weekValue">Semana ISO</label>
+                <input id="weekValue" type="week" name="weekValue" value="@Model.WeekValue" />
+            </div>
+
+            <div class="discrete-filter-field period-field period-month" data-period="month">
+                <label for="monthValue">Mes</label>
+                <input id="monthValue" type="month" name="monthValue" value="@Model.MonthValue" />
+            </div>
+
+            <div class="discrete-filter-field period-field period-custom" data-period="custom">
+                <label for="fromDate">Desde</label>
+                <input id="fromDate" type="date" name="fromDate" value="@(Model.StartDate.ToString("yyyy-MM-dd"))" />
+            </div>
+
+            <div class="discrete-filter-field period-field period-custom" data-period="custom">
+                <label for="toDate">Hasta</label>
+                <input id="toDate" type="date" name="toDate" value="@(Model.EndDate.ToString("yyyy-MM-dd"))" />
+            </div>
+
+            <div class="discrete-filter-field">
+                <label for="day">Ver solo día (opcional)</label>
+                <input id="day" type="date" name="day" value="@(Model.Day?.ToString("yyyy-MM-dd"))" />
+            </div>
             <button type="submit" class="btn btn-primary">Aplicar</button>
         </form>
     </div>
 
     <section class="error-kpis" aria-label="Resumen detalle discreto">
-        <article class="kpi-highlight apple-card error-kpi-card">
-            <span class="kpi-label">Piezas</span>
-            <strong class="kpi-value">@Model.TotalQty.ToString("N0")</strong>
-        </article>
-        <article class="kpi-highlight apple-card error-kpi-card incoming">
-            <span class="kpi-label">Scrap</span>
-            <strong class="kpi-value">@Model.TotalScrap.ToString("N0")</strong>
-        </article>
-        <article class="kpi-highlight apple-card error-kpi-card">
-            <span class="kpi-label">Órdenes</span>
-            <strong class="kpi-value">@Model.TotalOrders.ToString("N0")</strong>
+        <article class="kpi-highlight apple-card error-kpi-card" style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;">
+            <div>
+                <span class="kpi-label">Piezas</span>
+                <strong class="kpi-value">@Model.TotalQty.ToString("N0")</strong>
+            </div>
+            <div>
+                <span class="kpi-label">Órdenes</span>
+                <strong class="kpi-value">@Model.TotalOrders.ToString("N0")</strong>
+            </div>
+            <div>
+                <span class="kpi-label">Scrap</span>
+                <strong class="kpi-value">@Model.TotalScrap.ToString("N0")</strong>
+            </div>
         </article>
     </section>
 
@@ -114,3 +150,25 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const periodType = document.getElementById('periodType');
+            const fields = document.querySelectorAll('.period-field');
+            if (!periodType || !fields.length) return;
+
+            const toggleFields = () => {
+                const selected = periodType.value;
+                fields.forEach((field) => {
+                    const visible = field.dataset.period === selected;
+                    field.style.display = visible ? '' : 'none';
+                    field.querySelector('input')?.toggleAttribute('disabled', !visible);
+                });
+            };
+
+            periodType.addEventListener('change', toggleFields);
+            toggleFields();
+        })();
+    </script>
+}
