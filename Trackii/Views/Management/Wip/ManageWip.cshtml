@@ -43,7 +43,11 @@
 
         <div style="margin-top:12px;">
             <div id="reader" style="width:300px;max-width:100%;"></div>
-            <small>Formato esperado en QR: <strong>WO-12345|PART-999</strong>.</small>
+            <div id="scannerFallback" style="display:none;">
+                <label for="qrImageInput">Escanear QR desde imagen (funciona también en HTTP):</label>
+                <input id="qrImageInput" type="file" accept="image/*" class="input" style="margin-top:6px;" />
+            </div>
+            <small id="scannerHint">Formato esperado en QR: <strong>WO-12345|PART-999</strong>.</small>
         </div>
     </form>
 
@@ -129,6 +133,10 @@
         (function () {
             const woInput = document.getElementById('woInput');
             const partInput = document.getElementById('partInput');
+            const reader = document.getElementById('reader');
+            const scannerFallback = document.getElementById('scannerFallback');
+            const qrImageInput = document.getElementById('qrImageInput');
+            const scannerHint = document.getElementById('scannerHint');
 
             function parseBarcodeText(decodedText) {
                 const parts = decodedText.split('|');
@@ -146,10 +154,31 @@
                 }
             }
 
-            if (window.Html5QrcodeScanner) {
+            const hasSecureCameraContext = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+            if (window.Html5QrcodeScanner && hasSecureCameraContext) {
                 const scanner = new Html5QrcodeScanner('reader', { fps: 5, qrbox: 220 });
                 scanner.render(function (decodedText) {
                     parseBarcodeText(decodedText);
+                });
+            } else if (window.Html5Qrcode && qrImageInput) {
+                // En HTTP normal los navegadores bloquean cámara; habilitamos escaneo por imagen.
+                if (reader) {
+                    reader.style.display = 'none';
+                }
+                scannerFallback.style.display = 'block';
+                scannerHint.innerHTML = 'Tu navegador bloquea la cámara en HTTP. Usa imagen QR o abre por HTTPS/localhost.';
+
+                const fileScanner = new Html5Qrcode('reader');
+                qrImageInput.addEventListener('change', function (event) {
+                    const file = event.target.files && event.target.files[0];
+                    if (!file) return;
+
+                    fileScanner.scanFile(file, true)
+                        .then((decodedText) => parseBarcodeText(decodedText))
+                        .catch(() => {
+                            scannerHint.innerHTML = 'No se pudo leer el QR de la imagen. Verifica el formato.';
+                        });
                 });
             }
 
