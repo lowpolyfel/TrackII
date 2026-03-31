@@ -986,47 +986,39 @@ public class GerenciaService
 
         matrix.Subfamilies.AddRange(subfamilyNames);
 
-        var snapshotMap = new Dictionary<string, (int Pieces, int Orders)>(StringComparer.OrdinalIgnoreCase);
-        using (var snapshotCmd = new MySqlCommand(@"
+        var periodMap = new Dictionary<string, (int Pieces, int Orders)>(StringComparer.OrdinalIgnoreCase);
+        using (var periodCmd = new MySqlCommand(@"
             WITH active_locations AS (
                 SELECT DISTINCT rs.location_id
                 FROM route r
                 JOIN route_step rs ON rs.route_id = r.id
                 WHERE r.active = 1
-            ),
-            latest_execution AS (
-                SELECT wse.wip_item_id,
-                       wse.route_step_id,
-                       wse.qty_in,
-                       ROW_NUMBER() OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at DESC, wse.id DESC) AS rn
-                FROM wip_step_execution wse
-                WHERE wse.create_at < @snapshotCutoff
             )
             SELECT COALESCE(sf.name, 'Sin subfamilia') AS subfamily_name,
                    l.name AS location_name,
-                   COALESCE(SUM(le.qty_in), 0) AS pieces_total,
+                   COALESCE(SUM(wse.qty_in), 0) AS pieces_total,
                    COUNT(DISTINCT wo.id) AS orders_total
-            FROM latest_execution le
-            JOIN route_step rs ON rs.id = le.route_step_id
+            FROM wip_step_execution wse
+            JOIN route_step rs ON rs.id = wse.route_step_id
             JOIN active_locations al ON al.location_id = rs.location_id
             JOIN location l ON l.id = rs.location_id
-            JOIN wip_item wip ON wip.id = le.wip_item_id
+            JOIN wip_item wip ON wip.id = wse.wip_item_id
             JOIN work_order wo ON wo.id = wip.wo_order_id
             JOIN product p ON p.id = wo.product_id
             LEFT JOIN subfamily sf ON sf.id = p.id_subfamily
-            WHERE le.rn = 1
-              AND wo.status IN ('OPEN', 'IN_PROGRESS')
+            WHERE DATE(wse.create_at) BETWEEN @startDate AND @endDate
             GROUP BY subfamily_name, location_name", cn))
         {
-            snapshotCmd.Parameters.AddWithValue("@snapshotCutoff", endDate.Date.AddDays(1));
+            periodCmd.Parameters.AddWithValue("@startDate", startDate.Date);
+            periodCmd.Parameters.AddWithValue("@endDate", endDate.Date);
 
-            using var snapshotRd = snapshotCmd.ExecuteReader();
-            while (snapshotRd.Read())
+            using var periodRd = periodCmd.ExecuteReader();
+            while (periodRd.Read())
             {
-                var key = $"{snapshotRd.GetString("location_name")}|{snapshotRd.GetString("subfamily_name")}";
-                snapshotMap[key] = (
-                    Pieces: Convert.ToInt32(snapshotRd.GetInt64("pieces_total")),
-                    Orders: Convert.ToInt32(snapshotRd.GetInt64("orders_total")));
+                var key = $"{periodRd.GetString("location_name")}|{periodRd.GetString("subfamily_name")}";
+                periodMap[key] = (
+                    Pieces: Convert.ToInt32(periodRd.GetInt64("pieces_total")),
+                    Orders: Convert.ToInt32(periodRd.GetInt64("orders_total")));
             }
         }
 
@@ -1040,7 +1032,7 @@ public class GerenciaService
             foreach (var subfamily in subfamilyNames)
             {
                 var key = $"{location}|{subfamily}";
-                var values = snapshotMap.TryGetValue(key, out var found) ? found : (Pieces: 0, Orders: 0);
+                var values = periodMap.TryGetValue(key, out var found) ? found : (Pieces: 0, Orders: 0);
 
                 row.Cells.Add(new DiscreteInventoryCellVm
                 {
