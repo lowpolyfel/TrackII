@@ -4,7 +4,7 @@
     ViewData["Title"] = "Admin WIP Manager";
 }
 
-<div class="card">
+<div class="card wip-manager-card">
     <div class="page-header">
         <div>
             <h2>Admin WIP Manager</h2>
@@ -61,7 +61,8 @@
             <input type="hidden" asp-for="WipItemId" />
             <input type="hidden" asp-for="IsNewOrder" />
 
-            <table class="table">
+            <div class="table-wrapper wip-manager-table-wrapper">
+            <table class="table wip-manager-table">
                 <thead>
                     <tr>
                         <th>Paso</th>
@@ -69,6 +70,7 @@
                         <th>Qty In</th>
                         <th>Qty Scrap</th>
                         <th>Error Code</th>
+                        <th>Categoría Error</th>
                         <th>Comentarios</th>
                     </tr>
                 </thead>
@@ -77,7 +79,7 @@
                     {
                         var step = Model.RouteSteps[i];
                         <tr>
-                            <td>
+                            <td data-label="Paso">
                                 @step.StepNumber
                                 <input type="hidden" name="RouteSteps[@i].RouteStepId" value="@step.RouteStepId" />
                                 <input type="hidden" name="RouteSteps[@i].LocationId" value="@step.LocationId" />
@@ -85,36 +87,40 @@
                                 <input type="hidden" name="RouteSteps[@i].LocationName" value="@step.LocationName" />
                                 <input type="hidden" name="RouteSteps[@i].IsCompleted" value="@step.IsCompleted" />
                             </td>
-                            <td>@step.LocationName</td>
-                            <td>
-                                <input type="number" min="0" class="input" name="RouteSteps[@i].QtyIn" value="@step.QtyIn" @(step.IsCompleted ? "readonly" : string.Empty) />
+                            <td data-label="Location">@step.LocationName</td>
+                            <td data-label="Qty In">
+                                <input type="number" min="0" class="input js-qty-in" data-index="@i" name="RouteSteps[@i].QtyIn" value="@step.QtyIn" @(step.IsCompleted ? "readonly" : string.Empty) />
                             </td>
-                            <td>
+                            <td data-label="Qty Scrap">
                                 <input type="number" min="0" class="input js-scrap" data-index="@i" name="RouteSteps[@i].QtyScrap" value="@step.QtyScrap" @(step.IsCompleted ? "readonly" : string.Empty) />
                             </td>
-                            <td>
-                                <select class="input" name="RouteSteps[@i].ErrorCodeId" id="errorCode_@i" @(step.IsCompleted ? "disabled" : string.Empty)>
+                            <td data-label="Error Code">
+                                <select class="input" name="RouteSteps[@i].ErrorCodeId" id="errorCode_@i">
                                     <option value="">-- Selecciona --</option>
                                     @foreach (var errorCode in Model.ErrorCodes)
                                     {
                                         if (step.ErrorCodeId.HasValue && step.ErrorCodeId.Value == errorCode.Id)
                                         {
-                                            <option value="@errorCode.Id" selected>@errorCode.Code - @errorCode.Description</option>
+                                            <option value="@errorCode.Id" data-category="@errorCode.Category" selected>@errorCode.Code - @errorCode.Description</option>
                                         }
                                         else
                                         {
-                                            <option value="@errorCode.Id">@errorCode.Code - @errorCode.Description</option>
+                                            <option value="@errorCode.Id" data-category="@errorCode.Category">@errorCode.Code - @errorCode.Description</option>
                                         }
                                     }
                                 </select>
                             </td>
-                            <td>
+                            <td data-label="Categoría Error">
+                                <input class="input js-error-category" data-index="@i" name="RouteSteps[@i].ErrorCodeCategory" value="@step.ErrorCodeCategory" readonly />
+                            </td>
+                            <td data-label="Comentarios">
                                 <input class="input" name="RouteSteps[@i].ScrapComments" value="@step.ScrapComments" @(step.IsCompleted ? "readonly" : string.Empty) />
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
+            </div>
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
@@ -182,17 +188,84 @@
                 });
             }
 
-            document.querySelectorAll('.js-scrap').forEach((input) => {
+            const qtyInputs = Array.from(document.querySelectorAll('.js-qty-in'));
+            const scrapInputs = Array.from(document.querySelectorAll('.js-scrap'));
+            const categoryInputs = Array.from(document.querySelectorAll('.js-error-category'));
+
+            function normalizeNumber(value) {
+                const parsed = parseInt(value || '0', 10);
+                return Number.isNaN(parsed) ? 0 : parsed;
+            }
+
+            function syncErrorCodeRequirement(index) {
+                const scrapInput = scrapInputs[index];
+                const select = document.getElementById(`errorCode_${index}`);
+                if (!scrapInput || !select) return;
+
+                const scrap = normalizeNumber(scrapInput.value);
+                select.required = scrap > 0;
+            }
+
+            function syncErrorCategory(index) {
+                const select = document.getElementById(`errorCode_${index}`);
+                const categoryInput = categoryInputs[index];
+                if (!select || !categoryInput) return;
+
+                const selectedOption = select.options[select.selectedIndex];
+                categoryInput.value = selectedOption?.dataset.category || '';
+            }
+
+            function recalculateScrapForStep(index) {
+                if (index <= 0) return;
+
+                const previousQtyInput = qtyInputs[index - 1];
+                const currentQtyInput = qtyInputs[index];
+                const currentScrapInput = scrapInputs[index];
+                if (!previousQtyInput || !currentQtyInput || !currentScrapInput || currentScrapInput.readOnly) return;
+
+                const previousQty = normalizeNumber(previousQtyInput.value);
+                const currentQty = normalizeNumber(currentQtyInput.value);
+                const calculatedScrap = Math.max(previousQty - currentQty, 0);
+
+                currentScrapInput.value = calculatedScrap.toString();
+                syncErrorCodeRequirement(index);
+            }
+
+            qtyInputs.forEach((input) => {
                 input.addEventListener('input', function () {
-                    const index = this.dataset.index;
-                    const select = document.getElementById(`errorCode_${index}`);
-                    const scrap = parseInt(this.value || '0');
-                    if (scrap > 0) {
-                        select.required = true;
-                    } else {
-                        select.required = false;
+                    const index = normalizeNumber(this.dataset.index);
+                    recalculateScrapForStep(index);
+
+                    if (index + 1 < qtyInputs.length) {
+                        recalculateScrapForStep(index + 1);
                     }
                 });
+            });
+
+            scrapInputs.forEach((input) => {
+                input.addEventListener('input', function () {
+                    const index = normalizeNumber(this.dataset.index);
+                    syncErrorCodeRequirement(index);
+                });
+            });
+
+            qtyInputs.forEach((input) => {
+                const index = normalizeNumber(input.dataset.index);
+                recalculateScrapForStep(index);
+            });
+
+            qtyInputs.forEach((_, index) => {
+                const select = document.getElementById(`errorCode_${index}`);
+                if (!select) return;
+                select.addEventListener('change', function () {
+                    syncErrorCategory(index);
+                });
+                syncErrorCategory(index);
+            });
+
+            scrapInputs.forEach((input) => {
+                const index = normalizeNumber(input.dataset.index);
+                syncErrorCodeRequirement(index);
             });
         })();
     </script>

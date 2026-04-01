@@ -15,7 +15,15 @@ public class AdminWipManagerVm
     public bool IsNewOrder { get; set; }
 
     public List<WipStepVm> RouteSteps { get; set; } = new();
-    public List<(uint Id, string Code, string Description)> ErrorCodes { get; set; } = new();
+    public List<ErrorCodeVm> ErrorCodes { get; set; } = new();
+}
+
+public class ErrorCodeVm
+{
+    public uint Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
 }
 
 public class WipStepVm
@@ -28,6 +36,7 @@ public class WipStepVm
     public int QtyIn { get; set; }
     public int QtyScrap { get; set; }
     public uint? ErrorCodeId { get; set; }
+    public string? ErrorCodeCategory { get; set; }
     public string? ScrapComments { get; set; }
 
     public bool IsCompleted { get; set; }

@@ -141,7 +141,11 @@ public class AdminWipService
                     if (!step.ErrorCodeId.HasValue)
                         throw new Exception($"El paso {step.StepNumber} requiere ErrorCode al reportar scrap.");
 
-                    InsertScrapLog(cn, tx, wipId, step.RouteStepId, step.ErrorCodeId.Value, userId, step.QtyScrap, step.ScrapComments);
+                    UpsertScrapLog(cn, tx, wipId, step.RouteStepId, step.ErrorCodeId.Value, userId, step.QtyScrap, step.ScrapComments);
+                }
+                else
+                {
+                    DeleteScrapLog(cn, tx, wipId, step.RouteStepId);
                 }
 
                 lastCompletedStepId = step.RouteStepId;
@@ -229,6 +233,7 @@ public class AdminWipService
     {
         var steps = new List<WipStepVm>();
         var executions = new Dictionary<uint, (int QtyIn, int QtyScrap)>();
+        var scrapData = new Dictionary<uint, (uint ErrorCodeId, string ErrorCategory, string? Comments)>();
 
         if (wipItemId.HasValue)
         {
@@ -242,6 +247,33 @@ public class AdminWipService
             while (exRd.Read())
             {
                 executions[exRd.GetUInt32("route_step_id")] = (exRd.GetInt32("qty_in"), exRd.GetInt32("qty_scrap"));
+            }
+
+            using var scrapCmd = new MySqlCommand(@"
+                SELECT sl.route_step_id,
+                       sl.error_code_id,
+                       ecat.name AS error_category,
+                       sl.comments
+                FROM scrap_log sl
+                JOIN error_code ec ON ec.id = sl.error_code_id
+                JOIN error_category ecat ON ecat.id = ec.category_id
+                JOIN (
+                    SELECT route_step_id, MAX(id) AS latest_id
+                    FROM scrap_log
+                    WHERE wip_item_id=@wip
+                    GROUP BY route_step_id
+                ) recent ON recent.latest_id = sl.id
+                WHERE sl.wip_item_id=@wip", cn);
+            scrapCmd.Parameters.AddWithValue("@wip", wipItemId.Value);
+
+            using var scrapRd = scrapCmd.ExecuteReader();
+            while (scrapRd.Read())
+            {
+                var commentsOrdinal = scrapRd.GetOrdinal("comments");
+                scrapData[scrapRd.GetUInt32("route_step_id")] = (
+                    scrapRd.GetUInt32("error_code_id"),
+                    scrapRd.GetString("error_category"),
+                    scrapRd.IsDBNull(commentsOrdinal) ? null : scrapRd.GetString(commentsOrdinal));
             }
         }
 
@@ -258,6 +290,7 @@ public class AdminWipService
         {
             var stepId = rd.GetUInt32("id");
             var hasExecution = executions.TryGetValue(stepId, out var execution);
+            var hasScrapData = scrapData.TryGetValue(stepId, out var scrapEntry);
             steps.Add(new WipStepVm
             {
                 RouteStepId = stepId,
@@ -266,6 +299,9 @@ public class AdminWipService
                 LocationName = rd.GetString("location_name"),
                 QtyIn = hasExecution ? execution.QtyIn : 0,
                 QtyScrap = hasExecution ? execution.QtyScrap : 0,
+                ErrorCodeId = hasScrapData ? scrapEntry.ErrorCodeId : null,
+                ErrorCodeCategory = hasScrapData ? scrapEntry.ErrorCategory : null,
+                ScrapComments = hasScrapData ? scrapEntry.Comments : null,
                 IsCompleted = hasExecution
             });
         }
@@ -273,19 +309,26 @@ public class AdminWipService
         return steps;
     }
 
-    private static List<(uint Id, string Code, string Description)> GetErrorCodes(MySqlConnection cn)
+    private static List<ErrorCodeVm> GetErrorCodes(MySqlConnection cn)
     {
-        var list = new List<(uint, string, string)>();
+        var list = new List<ErrorCodeVm>();
 
         using var cmd = new MySqlCommand(@"
-            SELECT id, code, description
-            FROM error_code
-            ORDER BY code", cn);
+            SELECT ec.id, ec.code, ec.description, ecat.name AS category
+            FROM error_code ec
+            JOIN error_category ecat ON ecat.id = ec.category_id
+            ORDER BY ec.code", cn);
 
         using var rd = cmd.ExecuteReader();
         while (rd.Read())
         {
-            list.Add((rd.GetUInt32("id"), rd.GetString("code"), rd.GetString("description")));
+            list.Add(new ErrorCodeVm
+            {
+                Id = rd.GetUInt32("id"),
+                Code = rd.GetString("code"),
+                Description = rd.GetString("description"),
+                Category = rd.GetString("category")
+            });
         }
 
         return list;
@@ -412,8 +455,10 @@ public class AdminWipService
         cmd.ExecuteNonQuery();
     }
 
-    private static void InsertScrapLog(MySqlConnection cn, MySqlTransaction tx, uint wipId, uint routeStepId, uint errorCodeId, uint userId, int qty, string? comments)
+    private static void UpsertScrapLog(MySqlConnection cn, MySqlTransaction tx, uint wipId, uint routeStepId, uint errorCodeId, uint userId, int qty, string? comments)
     {
+        DeleteScrapLog(cn, tx, wipId, routeStepId);
+
         using var cmd = new MySqlCommand(@"
             INSERT INTO scrap_log
                 (wip_item_id, route_step_id, error_code_id, user_id, qty, comments, created_at)
@@ -426,6 +471,17 @@ public class AdminWipService
         cmd.Parameters.AddWithValue("@user", userId);
         cmd.Parameters.AddWithValue("@qty", qty);
         cmd.Parameters.AddWithValue("@comments", string.IsNullOrWhiteSpace(comments) ? DBNull.Value : comments);
+        cmd.ExecuteNonQuery();
+    }
+
+    private static void DeleteScrapLog(MySqlConnection cn, MySqlTransaction tx, uint wipId, uint routeStepId)
+    {
+        using var cmd = new MySqlCommand(@"
+            DELETE FROM scrap_log
+            WHERE wip_item_id=@wip AND route_step_id=@step", cn, tx);
+
+        cmd.Parameters.AddWithValue("@wip", wipId);
+        cmd.Parameters.AddWithValue("@step", routeStepId);
         cmd.ExecuteNonQuery();
     }
 
