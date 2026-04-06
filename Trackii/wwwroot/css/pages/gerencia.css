@@ -157,16 +157,19 @@
 }
 
 .discrete-filter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 14px;
-    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.5rem;
+    width: 100%;
 }
 
 .discrete-filter-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 200px;
 }
 
 .discrete-filter-field label {
@@ -194,6 +197,7 @@
 .discrete-filters input[type="month"],
 .discrete-filters input[type="week"],
 .discrete-filters select {
+    width: 100%;
     min-width: 160px;
     height: 50px;
     padding: 10px 14px;
@@ -220,7 +224,8 @@
 
 .discrete-filter-actions {
     display: flex;
-    align-items: end;
+    flex: 0 0 auto;
+    align-items: flex-end;
 }
 
 .discrete-filter-actions .btn {
