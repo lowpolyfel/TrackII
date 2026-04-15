@@ -136,18 +136,23 @@ public class GerenciaService
         using var rd = cmd.ExecuteReader();
         while (rd.Read())
         {
+            var woOrdinal = rd.GetOrdinal("wo_number");
+            var productOrdinal = rd.GetOrdinal("part_number");
+            var subfamilyOrdinal = rd.GetOrdinal("subfamily_name");
             var locationOrdinal = rd.GetOrdinal("location_name");
             var startOrdinal = rd.GetOrdinal("wip_start_at");
+            var qtyOrdinal = rd.GetOrdinal("qty_produced");
+            var scrapOrdinal = rd.GetOrdinal("qty_scrap");
 
             vm.Orders.Add(new DailyOrderDetailVm
             {
-                WoNumber = rd.GetString("wo_number"),
-                Product = rd.GetString("part_number"),
-                Subfamily = rd.GetString("subfamily_name"),
+                WoNumber = rd.IsDBNull(woOrdinal) ? "Sin orden" : rd.GetString(woOrdinal),
+                Product = rd.IsDBNull(productOrdinal) ? "Sin producto" : rd.GetString(productOrdinal),
+                Subfamily = rd.IsDBNull(subfamilyOrdinal) ? "Sin subfamilia" : rd.GetString(subfamilyOrdinal),
                 Location = rd.IsDBNull(locationOrdinal) ? null : rd.GetString(locationOrdinal),
                 WipStartAt = rd.IsDBNull(startOrdinal) ? null : rd.GetDateTime(startOrdinal),
-                Qty = Convert.ToInt32(rd.GetInt64("qty_produced")),
-                Scrap = Convert.ToInt32(rd.GetInt64("qty_scrap"))
+                Qty = rd.IsDBNull(qtyOrdinal) ? 0 : Convert.ToInt32(rd.GetValue(qtyOrdinal)),
+                Scrap = rd.IsDBNull(scrapOrdinal) ? 0 : Convert.ToInt32(rd.GetValue(scrapOrdinal))
             });
         }
 
