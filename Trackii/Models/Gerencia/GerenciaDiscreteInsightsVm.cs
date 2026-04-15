@@ -18,6 +18,8 @@ public class GerenciaDiscreteMapVm
     public ChartVm TotalsComparisonChart { get; } = new();
     public int ProducedTotal { get; set; }
     public int ScrapTotal { get; set; }
+    public ChartVm ProductionTrendChart { get; } = new();
+    public ChartVm ScrapTrendChart { get; } = new();
     public ChartVm SubfamilyTopProductsChart { get; } = new();
     public List<SubfamilyProductStatVm> SubfamilyTopProducts { get; } = new();
 }

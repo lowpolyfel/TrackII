@@ -534,7 +534,7 @@ public class GerenciaService
             WITH step_metrics AS (
                 SELECT wse.*,
                        GREATEST(
-                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           CAST(COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) AS SIGNED) - CAST(wse.qty_in AS SIGNED),
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
@@ -634,7 +634,7 @@ public class GerenciaService
             WITH step_metrics AS (
                 SELECT wse.*,
                        GREATEST(
-                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           CAST(COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) AS SIGNED) - CAST(wse.qty_in AS SIGNED),
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
@@ -742,7 +742,7 @@ public class GerenciaService
             WITH step_metrics AS (
                 SELECT wse.*,
                        GREATEST(
-                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           CAST(COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) AS SIGNED) - CAST(wse.qty_in AS SIGNED),
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
@@ -803,7 +803,7 @@ public class GerenciaService
             WITH step_metrics AS (
                 SELECT wse.*,
                        GREATEST(
-                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           CAST(COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) AS SIGNED) - CAST(wse.qty_in AS SIGNED),
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
@@ -838,7 +838,7 @@ public class GerenciaService
             WITH step_metrics AS (
                 SELECT wse.*,
                        GREATEST(
-                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           CAST(COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) AS SIGNED) - CAST(wse.qty_in AS SIGNED),
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
@@ -1110,7 +1110,7 @@ public class GerenciaService
             WITH step_metrics AS (
                 SELECT wse.*,
                        GREATEST(
-                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           CAST(COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) AS SIGNED) - CAST(wse.qty_in AS SIGNED),
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
@@ -1179,26 +1179,39 @@ public class GerenciaService
     {
         using var cmd = new MySqlCommand(@"
             WITH step_metrics AS (
-                SELECT wse.qty_in,
+                SELECT DATE(wse.create_at) AS metric_day,
+                       wse.qty_in,
                        GREATEST(
-                           COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) - wse.qty_in,
+                           CAST(COALESCE(LAG(wse.qty_in) OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at, wse.id), wse.qty_in) AS SIGNED) - CAST(wse.qty_in AS SIGNED),
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
                 WHERE DATE(wse.create_at) BETWEEN @startDate AND @endDate
             )
-            SELECT COALESCE(SUM(qty_in - calc_scrap), 0) AS produced_total,
+            SELECT metric_day,
+                   COALESCE(SUM(qty_in - calc_scrap), 0) AS produced_total,
                    COALESCE(SUM(calc_scrap), 0) AS scrap_total
-            FROM step_metrics", cn);
+            FROM step_metrics
+            GROUP BY metric_day
+            ORDER BY metric_day", cn);
 
         cmd.Parameters.AddWithValue("@startDate", startDate.Date);
         cmd.Parameters.AddWithValue("@endDate", endDate.Date);
 
         using var rd = cmd.ExecuteReader();
-        if (!rd.Read()) return;
+        while (rd.Read())
+        {
+            var day = rd.GetDateTime("metric_day");
+            var produced = Convert.ToInt32(rd.GetInt64("produced_total"));
+            var scrap = Convert.ToInt32(rd.GetInt64("scrap_total"));
 
-        vm.ProducedTotal = Convert.ToInt32(rd.GetInt64("produced_total"));
-        vm.ScrapTotal = Convert.ToInt32(rd.GetInt64("scrap_total"));
+            vm.ProductionTrendChart.Labels.Add(day.ToString("MM-dd"));
+            vm.ProductionTrendChart.Values.Add(produced);
+            vm.ScrapTrendChart.Labels.Add(day.ToString("MM-dd"));
+            vm.ScrapTrendChart.Values.Add(scrap);
+            vm.ProducedTotal += produced;
+            vm.ScrapTotal += scrap;
+        }
 
         vm.TotalsComparisonChart.Labels.AddRange(["Piezas", "Órdenes"]);
         vm.TotalsComparisonChart.Values.Add(vm.Matrix.TotalPieces);

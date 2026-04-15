@@ -37,47 +37,53 @@
         <a asp-controller="Gerencia" asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver</a>
     </div>
 
-    <section class="error-kpis" aria-label="Resumen inventario real">
-        <article class="kpi-highlight apple-card error-kpi-card discrete-kpi-grid">
-            <div class="kpi-with-chart">
-                <div>
-                    <span class="kpi-label">Total piezas</span>
-                    <strong class="kpi-value">@Model.Matrix.TotalPieces.ToString("N0")</strong>
-                </div>
+    <section class="discrete-overview-grid" aria-label="Resumen ejecutivo discretos">
+        <article class="kpi-highlight apple-card error-kpi-card compact-executive-card">
+            <div class="compact-executive-header">
+                <span class="kpi-label">Resumen general (piezas + órdenes)</span>
+                <form method="get" class="quick-range-form">
+                    <div class="quick-range-buttons quick-range-buttons-compact" role="group" aria-label="Rango rápido">
+                        <button class="btn @(Model.QuickRange == "day" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="day">All day</button>
+                        <button class="btn @(Model.QuickRange == "week" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="week">All week</button>
+                        <button class="btn @(Model.QuickRange == "month" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="month">All month</button>
+                        <button class="btn @(Model.QuickRange == "historic" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="historic">All year</button>
+                    </div>
+                    <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                    <input type="hidden" name="metricView" value="@Model.MetricView" />
+                    <input type="hidden" name="weekValue" value="@Model.WeekValue" />
+                    <input type="hidden" name="monthValue" value="@Model.MonthValue" />
+                    <input type="hidden" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
+                    <input type="hidden" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
+                </form>
             </div>
-            <div class="kpi-with-chart">
-                <div>
-                    <span class="kpi-label">Total órdenes</span>
-                    <strong class="kpi-value">@Model.Matrix.TotalOrders.ToString("N0")</strong>
+            <div class="compact-executive-body">
+                <div class="compact-kpi-grid">
+                    <div>
+                        <span class="kpi-label">Total piezas</span>
+                        <strong class="kpi-value">@Model.Matrix.TotalPieces.ToString("N0")</strong>
+                    </div>
+                    <div>
+                        <span class="kpi-label">Total órdenes</span>
+                        <strong class="kpi-value">@Model.Matrix.TotalOrders.ToString("N0")</strong>
+                    </div>
+                    <div>
+                        <span class="kpi-label">Producción</span>
+                        <strong class="kpi-value">@Model.ProducedTotal.ToString("N0")</strong>
+                    </div>
+                    <div>
+                        <span class="kpi-label">Scrap</span>
+                        <strong class="kpi-value">@Model.ScrapTotal.ToString("N0")</strong>
+                    </div>
                 </div>
+                <div id="ordersSummaryChart" class="mini-chart-host" aria-label="Estado general de órdenes"></div>
             </div>
-            <div id="totalsComparisonChart" class="mini-chart-host" aria-label="Comparativo total piezas y total órdenes"></div>
-            <small>Subfamilias sin actividad ocultas automáticamente para reducir ruido visual.</small>
-        </article>
-
-        <article class="kpi-highlight apple-card error-kpi-card orders-status-card">
-            <span class="kpi-label">Estado general de órdenes</span>
-            <div id="ordersSummaryChart" class="mini-chart-host" aria-label="Estado general de órdenes"></div>
             <small>Incluye abiertas, terminadas, canceladas y en retrabajo.</small>
         </article>
-    </section>
 
-    <section class="hidden-subfamilies-grid" aria-label="Detalle de subfamilias y scrap">
-        <article class="kpi-highlight apple-card error-kpi-card hidden-subfamilies-card">
-            <span class="kpi-label">Subfamilias ocultas</span>
-            @if (!Model.HiddenSubfamilies.Any())
-            {
-                <p class="subtitle">Todas las subfamilias tienen actividad en el rango seleccionado.</p>
-            }
-            else
-            {
-                <ul class="compact-list minimal-list">
-                    @foreach (var name in Model.HiddenSubfamilies)
-                    {
-                        <li>@name</li>
-                    }
-                </ul>
-            }
+        <article class="kpi-highlight apple-card error-kpi-card compact-scrap-card">
+            <span class="kpi-label">Scrap vs producción (líneas superpuestas)</span>
+            <div id="scrapVsProductionChart" class="chart-host compact-line-chart"></div>
+            <small>Evolución en el periodo seleccionado: tiempo vs piezas producidas y scrap.</small>
         </article>
 
         <article class="kpi-highlight apple-card error-kpi-card hidden-subfamilies-card">
@@ -91,20 +97,6 @@
         <div class="card-heading">
             <h3>Mapa principal (@metricLabel)</h3>
             <div class="map-toolbar">
-                <form method="get" class="quick-range-form">
-                    <div class="quick-range-buttons" role="group" aria-label="Rango rápido">
-                        <button class="btn @(Model.QuickRange == "day" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="day">All day</button>
-                        <button class="btn @(Model.QuickRange == "week" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="week">All week</button>
-                        <button class="btn @(Model.QuickRange == "month" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="month">All month</button>
-                        <button class="btn @(Model.QuickRange == "historic" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="historic">All year</button>
-                    </div>
-                    <input type="hidden" name="sortBy" value="@Model.SortBy" />
-                    <input type="hidden" name="metricView" value="@Model.MetricView" />
-                    <input type="hidden" name="weekValue" value="@Model.WeekValue" />
-                    <input type="hidden" name="monthValue" value="@Model.MonthValue" />
-                    <input type="hidden" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
-                    <input type="hidden" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
-                </form>
                 <form method="get" class="metric-switch-form">
                     <div class="metric-switch" role="group" aria-label="Cambiar métrica del mapa">
                         <button type="submit" name="metricView" value="pieces" class="btn btn-sm-inline @(Model.MetricView == "pieces" ? "btn-primary" : "btn-secondary")">Piezas</button>
@@ -179,40 +171,43 @@
             </table>
         </div>
     </div>
+
+    <section class="hidden-subfamilies-grid" aria-label="Detalle de subfamilias ocultas">
+        <article class="kpi-highlight apple-card error-kpi-card hidden-subfamilies-card">
+            <span class="kpi-label">Subfamilias ocultas</span>
+            @if (!Model.HiddenSubfamilies.Any())
+            {
+                <p class="subtitle">Todas las subfamilias tienen actividad en el rango seleccionado.</p>
+            }
+            else
+            {
+                <ul class="compact-list minimal-list">
+                    @foreach (var name in Model.HiddenSubfamilies)
+                    {
+                        <li>@name</li>
+                    }
+                </ul>
+            }
+        </article>
+    </section>
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
-        const totalsLabels = @Html.Raw(JsonSerializer.Serialize(Model.TotalsComparisonChart.Labels));
-        const totalsValues = @Html.Raw(JsonSerializer.Serialize(Model.TotalsComparisonChart.Values));
         const orderStatusLabels = @Html.Raw(JsonSerializer.Serialize(Model.OrdersSummaryChart.Labels));
         const orderStatusValues = @Html.Raw(JsonSerializer.Serialize(Model.OrdersSummaryChart.Values));
-        const producedTotal = @Model.ProducedTotal;
-        const scrapTotal = @Model.ScrapTotal;
+        const productionTrendLabels = @Html.Raw(JsonSerializer.Serialize(Model.ProductionTrendChart.Labels));
+        const productionTrendValues = @Html.Raw(JsonSerializer.Serialize(Model.ProductionTrendChart.Values));
+        const scrapTrendValues = @Html.Raw(JsonSerializer.Serialize(Model.ScrapTrendChart.Values));
 
-        const totalsComparisonContainer = document.getElementById('totalsComparisonChart');
         const ordersSummaryContainer = document.getElementById('ordersSummaryChart');
         const scrapVsProductionContainer = document.getElementById('scrapVsProductionChart');
-
-        if (totalsComparisonContainer) {
-            totalsComparisonContainer.innerHTML = '';
-            new ApexCharts(totalsComparisonContainer, {
-                chart: { type: 'donut', height: 220, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-                labels: totalsLabels,
-                series: totalsValues,
-                legend: { position: 'bottom' },
-                colors: ['#2484ff', '#00a884'],
-                stroke: { width: 2, colors: ['#fff'] },
-                dataLabels: { enabled: false },
-                plotOptions: { pie: { donut: { size: '62%' } } }
-            }).render();
-        }
 
         if (ordersSummaryContainer) {
             ordersSummaryContainer.innerHTML = '';
             new ApexCharts(ordersSummaryContainer, {
-                chart: { type: 'donut', height: 220, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                chart: { type: 'donut', height: 240, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
                 labels: orderStatusLabels,
                 series: orderStatusValues,
                 legend: { position: 'bottom' },
@@ -226,18 +221,26 @@
         if (scrapVsProductionContainer) {
             scrapVsProductionContainer.innerHTML = '';
             new ApexCharts(scrapVsProductionContainer, {
-                chart: { type: 'bar', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif', stacked: false },
+                chart: { type: 'line', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
                 series: [
-                    { name: 'Producción', type: 'column', data: [producedTotal] },
-                    { name: 'Scrap', type: 'line', data: [scrapTotal] }
+                    { name: 'Producción', type: 'line', data: productionTrendValues },
+                    { name: 'Scrap', type: 'line', data: scrapTrendValues }
                 ],
-                colors: ['#20bf6b', '#ff6b6b'],
-                stroke: { width: [0, 3], curve: 'smooth' },
-                markers: { size: [0, 5] },
-                xaxis: { categories: ['Periodo seleccionado'] },
+                colors: ['#14b8a6', '#ef4444'],
+                stroke: { width: [3, 3], curve: 'smooth' },
+                markers: { size: 4 },
+                xaxis: { categories: productionTrendLabels },
                 yaxis: [{ title: { text: 'Cantidad' } }],
-                dataLabels: { enabled: true, enabledOnSeries: [1] },
-                plotOptions: { bar: { borderRadius: 8, columnWidth: '40%' } },
+                dataLabels: { enabled: false },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.45,
+                        opacityTo: 0.1,
+                        stops: [0, 95, 100]
+                    }
+                },
                 legend: { position: 'top' }
             }).render();
         }

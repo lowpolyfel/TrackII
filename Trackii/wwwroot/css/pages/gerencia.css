@@ -603,8 +603,59 @@
     min-height: 220px;
 }
 
-.orders-status-card .mini-chart-host {
-    margin-top: 6px;
+.discrete-overview-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.compact-executive-card {
+    padding: 14px;
+}
+
+.compact-executive-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.quick-range-buttons-compact {
+    gap: 6px;
+}
+
+.quick-range-buttons-compact .btn {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: .78rem;
+}
+
+.compact-executive-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: center;
+}
+
+.compact-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.compact-kpi-grid .kpi-value {
+    font-size: 1.4rem;
+}
+
+.compact-scrap-card {
+    padding: 14px;
+}
+
+.compact-line-chart {
+    min-height: 300px;
+    margin-top: 8px;
 }
 
 .kpi-with-chart {
@@ -615,8 +666,8 @@
 
 .hidden-subfamilies-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    grid-template-columns: 1fr;
+    gap: 10px;
     margin-bottom: 16px;
 }
 
@@ -641,6 +692,19 @@
 }
 
 @media (max-width: 900px) {
+    .discrete-overview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .compact-executive-body {
+        grid-template-columns: 1fr;
+    }
+
+    .compact-executive-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
     .hidden-subfamilies-grid {
         grid-template-columns: 1fr;
     }
