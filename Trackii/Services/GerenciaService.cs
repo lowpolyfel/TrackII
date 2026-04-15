@@ -1178,7 +1178,13 @@ public class GerenciaService
     private static void LoadDiscreteProductionVsScrap(MySqlConnection cn, GerenciaDiscreteMapVm vm, DateTime startDate, DateTime endDate)
     {
         using var cmd = new MySqlCommand(@"
-            WITH step_metrics AS (
+            WITH active_locations AS (
+                SELECT DISTINCT rs.location_id
+                FROM route r
+                JOIN route_step rs ON rs.route_id = r.id
+                WHERE r.active = 1
+            ),
+            step_metrics AS (
                 SELECT DATE(wse.create_at) AS metric_day,
                        wse.qty_in,
                        GREATEST(
@@ -1186,6 +1192,8 @@ public class GerenciaService
                            0
                        ) AS calc_scrap
                 FROM wip_step_execution wse
+                JOIN route_step rs ON rs.id = wse.route_step_id
+                JOIN active_locations al ON al.location_id = rs.location_id
                 WHERE DATE(wse.create_at) BETWEEN @startDate AND @endDate
             )
             SELECT metric_day,
