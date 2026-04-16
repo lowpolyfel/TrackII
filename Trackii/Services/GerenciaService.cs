@@ -97,7 +97,7 @@ public class GerenciaService
         cn.Open();
         vm.Matrix = GetDiscreteInventoryMatrix(cn, start, end, vm);
         vm.SelectedSubfamily = ResolveSelectedSubfamily(vm.Matrix.Subfamilies, vm.SelectedSubfamily);
-        LoadDiscreteOrdersSummary(cn, vm);
+        LoadDiscreteOrdersSummary(cn, vm, start, end);
         LoadDiscreteProductionVsScrap(cn, vm, start, end);
 
         return vm;
@@ -1151,27 +1151,34 @@ public class GerenciaService
         }
     }
 
-    private static void LoadDiscreteOrdersSummary(MySqlConnection cn, GerenciaDiscreteMapVm vm)
+    private static void LoadDiscreteOrdersSummary(MySqlConnection cn, GerenciaDiscreteMapVm vm, DateTime startDate, DateTime endDate)
     {
         using var cmd = new MySqlCommand(@"
+            WITH active_orders AS (
+                SELECT DISTINCT wo.id, wo.status
+                FROM work_order wo
+                JOIN wip_item wip ON wip.wo_order_id = wo.id
+                JOIN wip_step_execution wse ON wse.wip_item_id = wip.id
+                WHERE DATE(wse.create_at) BETWEEN @startDate AND @endDate
+            )
             SELECT
-                (SELECT COUNT(*) FROM work_order WHERE status IN ('OPEN','IN_PROGRESS')) AS open_total,
-                (SELECT COUNT(*) FROM work_order WHERE status = 'FINISHED') AS finished_total,
-                (SELECT COUNT(*) FROM work_order WHERE status = 'CANCELLED') AS cancelled_total,
-                (SELECT COUNT(DISTINCT wo.id)
-                 FROM work_order wo
-                 JOIN wip_item wi ON wi.wo_order_id = wo.id
-                 WHERE wi.status = 'HOLD') AS rework_total", cn);
+                (SELECT COUNT(*) FROM active_orders WHERE status = 'OPEN') AS open_total,
+                (SELECT COUNT(*) FROM active_orders WHERE status = 'IN_PROGRESS') AS in_progress_total,
+                (SELECT COUNT(*) FROM active_orders WHERE status = 'CANCELLED') AS cancelled_total,
+                (SELECT COUNT(*) FROM active_orders WHERE status = 'FINISHED') AS finished_total", cn);
+
+        cmd.Parameters.AddWithValue("@startDate", startDate.Date);
+        cmd.Parameters.AddWithValue("@endDate", endDate.Date);
 
         using var rd = cmd.ExecuteReader();
         if (!rd.Read()) return;
 
-        vm.OrdersSummaryChart.Labels.AddRange(["Abiertas", "Terminadas", "Canceladas", "Retrabajo"]);
+        vm.OrdersSummaryChart.Labels.AddRange(["Abiertas", "En Progreso", "Canceladas", "Terminadas"]);
         vm.OrdersSummaryChart.Values.AddRange([
             Convert.ToInt32(rd.GetInt64("open_total")),
-            Convert.ToInt32(rd.GetInt64("finished_total")),
+            Convert.ToInt32(rd.GetInt64("in_progress_total")),
             Convert.ToInt32(rd.GetInt64("cancelled_total")),
-            Convert.ToInt32(rd.GetInt64("rework_total"))
+            Convert.ToInt32(rd.GetInt64("finished_total"))
         ]);
     }
 
@@ -1228,16 +1235,23 @@ public class GerenciaService
     private static void ResolvePeriod(string periodType, string? weekValue, string? monthValue, DateTime? fromDate, DateTime? toDate, out DateTime start, out DateTime end, out string normalizedPeriodType, out string normalizedWeek, out string normalizedMonth)
     {
         var today = DateTime.UtcNow.Date;
-        normalizedPeriodType = periodType;
+        normalizedPeriodType = periodType ?? "week";
 
-        switch (periodType)
+        switch (normalizedPeriodType)
         {
-            case "day" when fromDate.HasValue:
-                start = fromDate.Value.Date;
+            case "day":
+                start = today;
                 end = start;
                 break;
-            case "month" when !string.IsNullOrWhiteSpace(monthValue) && DateTime.TryParse($"{monthValue}-01", out var monthDate):
-                start = new DateTime(monthDate.Year, monthDate.Month, 1);
+            case "month":
+                if (!string.IsNullOrWhiteSpace(monthValue) && DateTime.TryParse($"{monthValue}-01", out var monthDate))
+                {
+                    start = new DateTime(monthDate.Year, monthDate.Month, 1);
+                }
+                else
+                {
+                    start = new DateTime(today.Year, today.Month, 1);
+                }
                 end = start.AddMonths(1).AddDays(-1);
                 break;
             case "historic":
@@ -1249,14 +1263,18 @@ public class GerenciaService
                 end = toDate.Value.Date;
                 if (end < start) (start, end) = (end, start);
                 break;
-            case "week" when !string.IsNullOrWhiteSpace(weekValue) && TryParseWeekValue(weekValue, out var weekStart):
-                start = weekStart;
-                end = weekStart.AddDays(6);
-                break;
+            case "week":
             default:
-                start = GetStartOfWeek(today);
+                if (!string.IsNullOrWhiteSpace(weekValue) && TryParseWeekValue(weekValue, out var weekStart))
+                {
+                    start = weekStart;
+                }
+                else
+                {
+                    start = GetStartOfWeek(today);
+                }
                 end = start.AddDays(6);
-                normalizedPeriodType = "week";
+                if (normalizedPeriodType != "custom") normalizedPeriodType = "week";
                 break;
         }
 

@@ -28,138 +28,72 @@
     var rowTotalLabel = Model.MetricView == "orders" ? "Total órdenes" : "Total piezas";
 }
 
-<div class="dashboard">
-    <div class="page-header error-causes-header">
-        <div>
-            <h2>Mapa de Discretos (versión ejecutiva)</h2>
-            <p class="subtitle">Corte al <strong>@Model.SnapshotDate.ToString("dddd dd MMM yyyy", spanish)</strong> · periodo: <strong>@Model.Matrix.StartDate.ToString("yyyy-MM-dd")</strong> a <strong>@Model.Matrix.EndDate.ToString("yyyy-MM-dd")</strong>.</p>
-        </div>
-        <a asp-controller="Gerencia" asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+<div class="page-header error-causes-header">
+    <div>
+        <h2>Mapa de Discretos</h2>
     </div>
+    <a asp-controller="Gerencia" asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+</div>
 
-    <section class="discrete-overview-grid" aria-label="Resumen ejecutivo discretos">
-        <article id="summaryPanel" class="kpi-highlight apple-card error-kpi-card compact-executive-card"
-                 data-order-labels="@JsonSerializer.Serialize(Model.OrdersSummaryChart.Labels)"
-                 data-order-values="@JsonSerializer.Serialize(Model.OrdersSummaryChart.Values)">
-            <div class="compact-executive-header">
-                <span class="kpi-label">Resumen general (piezas + órdenes)</span>
-                <form method="get" class="quick-range-form js-async-discrete-form" data-target="#summaryPanel">
-                    <div class="quick-range-buttons quick-range-buttons-compact" role="group" aria-label="Rango rápido">
-                        <button class="btn @(Model.QuickRange == "day" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="day">All day</button>
-                        <button class="btn @(Model.QuickRange == "week" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="week">All week</button>
-                        <button class="btn @(Model.QuickRange == "month" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="month">All month</button>
-                        <button class="btn @(Model.QuickRange == "historic" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="historic">All year</button>
-                    </div>
-                    <input type="hidden" name="sortBy" value="@Model.SortBy" />
-                    <input type="hidden" name="metricView" value="@Model.MetricView" />
-                    <input type="hidden" name="weekValue" value="@Model.WeekValue" />
-                    <input type="hidden" name="monthValue" value="@Model.MonthValue" />
-                    <input type="hidden" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
-                    <input type="hidden" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
-                </form>
-            </div>
-            <div class="compact-executive-body">
-                <div class="compact-kpi-grid">
-                    <div>
-                        <span class="kpi-label">Total piezas</span>
-                        <strong class="kpi-value">@Model.Matrix.TotalPieces.ToString("N0")</strong>
-                    </div>
-                    <div>
-                        <span class="kpi-label">Total órdenes</span>
-                        <strong class="kpi-value">@Model.Matrix.TotalOrders.ToString("N0")</strong>
-                    </div>
-                    <div>
-                        <span class="kpi-label">Producción</span>
-                        <strong class="kpi-value">@Model.ProducedTotal.ToString("N0")</strong>
-                    </div>
-                    <div>
-                        <span class="kpi-label">Scrap</span>
-                        <strong class="kpi-value">@Model.ScrapTotal.ToString("N0")</strong>
-                    </div>
-                </div>
-                <div id="ordersSummaryChart" class="mini-chart-host" aria-label="Estado general de órdenes"></div>
-            </div>
-            <small>Incluye abiertas, terminadas, canceladas y en retrabajo.</small>
-        </article>
+<style>
+    /* Cuadrícula proporcionada, manteniendo la misma altura sin hacerse gigantes */
+    @@media (min-width: 1024px) {
+        .discrete-overview-grid {
+            grid-template-columns: 32% 68% !important;
+            align-items: stretch !important;
+            margin-top: 30px;
+        }
+    }
 
-        <article id="scrapPanel" class="kpi-highlight apple-card error-kpi-card compact-scrap-card"
-                 data-chart-labels="@JsonSerializer.Serialize(Model.ProductionTrendChart.Labels)"
-                 data-chart-production="@JsonSerializer.Serialize(Model.ProductionTrendChart.Values)"
-                 data-chart-scrap="@JsonSerializer.Serialize(Model.ScrapTrendChart.Values)">
-            <div class="compact-executive-header">
-                <span class="kpi-label">Scrap vs producción (líneas superpuestas)</span>
-                <form method="get" class="quick-range-form js-async-discrete-form" data-target="#scrapPanel">
-                    <div class="quick-range-buttons quick-range-buttons-compact" role="group" aria-label="Rango rápido de scrap">
-                        <button class="btn @(Model.QuickRange == "day" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="day">All day</button>
-                        <button class="btn @(Model.QuickRange == "week" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="week">All week</button>
-                        <button class="btn @(Model.QuickRange == "month" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="month">All month</button>
-                        <button class="btn @(Model.QuickRange == "historic" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="historic">All year</button>
-                    </div>
-                    <div style="margin-top:8px;">
-                        <label for="selectedSubfamily" class="visually-hidden">Subfamilia</label>
-                        <select id="selectedSubfamily" name="selectedSubfamily" class="form-control form-control-sm" onchange="this.form.requestSubmit();">
-                            @foreach (var subfamily in Model.Matrix.Subfamilies)
-                            {
-                                if (Model.SelectedSubfamily == subfamily)
-                                {
-                                    <option value="@subfamily" selected="selected">@subfamily</option>
-                                }
-                                else
-                                {
-                                    <option value="@subfamily">@subfamily</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <input type="hidden" name="sortBy" value="@Model.SortBy" />
-                    <input type="hidden" name="metricView" value="@Model.MetricView" />
-                    <input type="hidden" name="weekValue" value="@Model.WeekValue" />
-                    <input type="hidden" name="monthValue" value="@Model.MonthValue" />
-                    <input type="hidden" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
-                    <input type="hidden" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
-                </form>
-            </div>
-            <div id="scrapVsProductionChart" class="chart-host compact-line-chart"></div>
-            <small>Evolución de la subfamilia seleccionada: tiempo vs piezas producidas y scrap.</small>
-        </article>
-    </section>    
+    #summaryPanel, #scrapPanel {
+        display: flex;
+        flex-direction: column;
+    }
+</style>
 
-    <div id="mapPanel" class="card gerencia-weekly-card apple-card error-causes-card discrete-map-card">
-        <div class="card-heading">
-            <h3>Mapa principal (@metricLabel)</h3>
-            <div class="map-toolbar">
-                <form method="get" class="metric-switch-form js-async-discrete-form" data-target="#mapPanel">
-                    <div class="quick-range-buttons quick-range-buttons-compact" role="group" aria-label="Rango rápido del mapa">
-                        <button class="btn @(Model.QuickRange == "day" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="day">All day</button>
-                        <button class="btn @(Model.QuickRange == "week" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="week">All week</button>
-                        <button class="btn @(Model.QuickRange == "month" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="month">All month</button>
-                        <button class="btn @(Model.QuickRange == "historic" ? "btn-primary" : "btn-secondary")" type="submit" name="periodType" value="historic">All year</button>
-                    </div>
-                    <div class="metric-switch" role="group" aria-label="Cambiar métrica del mapa">
-                        <button type="submit" name="metricView" value="pieces" class="btn btn-sm-inline @(Model.MetricView == "pieces" ? "btn-primary" : "btn-secondary")">Piezas</button>
-                        <button type="submit" name="metricView" value="orders" class="btn btn-sm-inline @(Model.MetricView == "orders" ? "btn-primary" : "btn-secondary")">Órdenes</button>
-                    </div>
-                    <input type="hidden" name="sortBy" value="@Model.SortBy" />
-                    <input type="hidden" name="weekValue" value="@Model.WeekValue" />
-                    <input type="hidden" name="monthValue" value="@Model.MonthValue" />
-                    <input type="hidden" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" />
-                    <input type="hidden" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" />
-                </form>
+<div id="mapPanel">
+    <form method="get" class="js-async-discrete-form" data-target="#mapPanel" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; flex-wrap: wrap; gap: 20px;">
+        
+        <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm shadow-sm" style="width: auto;">
+                <span class="input-group-text bg-white text-muted"><i class="fa-regular fa-calendar"></i></span>
+                <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                <span class="input-group-text bg-white text-muted border-start-0 border-end-0"><i class="fa-solid fa-arrow-right"></i></span>
+                <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                <button type="submit" name="periodType" value="custom" class="btn @(Model.QuickRange == "custom" ? "btn-primary" : "btn-dark")">Filtrar</button>
             </div>
         </div>
-        <div class="table-wrapper discrete-map-wrapper">
-            <table class="table gerencia-weekly-table discrete-map-table">
-                <thead>
-                    <tr>
-                        <th>Localidad</th>
-                        @foreach (var subfamily in Model.Matrix.Subfamilies)
-                        {
-                            <th title="@subfamily">@shortNames[subfamily]</th>
-                        }
-                        <th>@rowTotalLabel</th>
-                    </tr>
-                </thead>
-                <tbody>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-end;">
+            <div class="btn-group shadow-sm" role="group" aria-label="Cambiar métrica del mapa">
+                <button type="submit" name="metricView" value="pieces" class="btn btn-sm @(Model.MetricView == "pieces" ? "btn-dark" : "btn-outline-dark")"><i class="fa-solid fa-puzzle-piece"></i> Piezas</button>
+                <button type="submit" name="metricView" value="orders" class="btn btn-sm @(Model.MetricView == "orders" ? "btn-dark" : "btn-outline-dark")"><i class="fa-solid fa-list-check"></i> Órdenes</button>
+            </div>
+
+            <div class="btn-group shadow-sm" role="group" aria-label="Rango rápido del mapa">
+                <button class="btn btn-sm @(Model.QuickRange == "day" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="day">Día</button>
+                <button class="btn btn-sm @(Model.QuickRange == "week" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="week">Semana</button>
+                <button class="btn btn-sm @(Model.QuickRange == "month" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="month">Mes</button>
+                <button class="btn btn-sm @(Model.QuickRange == "historic" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="historic">Anual</button>
+            </div>
+        </div>
+        
+        <input type="hidden" name="sortBy" value="@Model.SortBy" />
+    </form>
+
+    <div class="table-wrapper discrete-map-wrapper">
+        <table class="table gerencia-weekly-table discrete-map-table">
+            <thead>
+                <tr>
+                    <th>Localidad</th>
+                    @foreach (var subfamily in Model.Matrix.Subfamilies)
+                    {
+                        <th title="@subfamily">@shortNames[subfamily]</th>
+                    }
+                    <th>@rowTotalLabel</th>
+                </tr>
+            </thead>
+            <tbody>
                 @if (!Model.Matrix.Rows.Any())
                 {
                     <tr>
@@ -185,15 +119,15 @@
                                     else
                                     {
                                         <a asp-controller="Gerencia"
-                                           asp-action="DiscreteMapDetail"
-                                           asp-route-location="@row.Location"
-                                           asp-route-subfamily="@cell.Subfamily"
-                                           asp-route-periodType="@Model.PeriodType"
-                                           asp-route-weekValue="@Model.WeekValue"
-                                           asp-route-monthValue="@Model.MonthValue"
-                                           asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
-                                           asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))"
-                                           class="cell-link-strong">
+                                               asp-action="DiscreteMapDetail"
+                                               asp-route-location="@row.Location"
+                                               asp-route-subfamily="@cell.Subfamily"
+                                               asp-route-periodType="@Model.PeriodType"
+                                               asp-route-weekValue="@Model.WeekValue"
+                                               asp-route-monthValue="@Model.MonthValue"
+                                               asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                                               asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))"
+                                               class="cell-link-strong">
                                             @metricValue.ToString("N0")
                                         </a>
                                     }
@@ -203,12 +137,91 @@
                         </tr>
                     }
                 }
-                </tbody>
-            </table>
-        </div>
+            </tbody>
+        </table>
     </div>
-
 </div>
+
+<section class="discrete-overview-grid" aria-label="Resumen ejecutivo discretos">
+    
+    <article id="summaryPanel"
+             class="kpi-highlight apple-card error-kpi-card compact-executive-card"
+             data-order-labels="@JsonSerializer.Serialize(Model.OrdersSummaryChart.Labels)"
+             data-order-values="@JsonSerializer.Serialize(Model.OrdersSummaryChart.Values)">
+            
+        <div class="compact-executive-header" style="display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+            <span class="kpi-label" style="font-size: 1.1rem; font-weight: 600; color: #1e293b;">Resumen General</span>
+            <form method="get" class="quick-range-form js-async-discrete-form" data-target="#summaryPanel">
+                <div class="btn-group shadow-sm w-100" role="group" aria-label="Rango rápido">
+                    <button class="btn btn-sm @(Model.QuickRange == "day" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="day">Día</button>
+                    <button class="btn btn-sm @(Model.QuickRange == "week" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="week">Semana</button>
+                    <button class="btn btn-sm @(Model.QuickRange == "month" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="month">Mes</button>
+                    <button class="btn btn-sm @(Model.QuickRange == "historic" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="historic">Anual</button>
+                </div>
+                <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                <input type="hidden" name="metricView" value="@Model.MetricView" />
+            </form>
+        </div>
+
+        <div class="compact-executive-body" style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+            <div class="kpi-metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="kpi-box" style="background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                    <span style="display: block; color: #64748b; font-size: 0.70rem; font-weight: bold; text-transform: uppercase;">Piezas</span>
+                    <strong style="font-size: 1.5rem; color: #0f172a; line-height: 1.1;">@Model.Matrix.TotalPieces.ToString("N0")</strong>
+                </div>
+                <div class="kpi-box" style="background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid #10b981;">
+                    <span style="display: block; color: #64748b; font-size: 0.70rem; font-weight: bold; text-transform: uppercase;">Órdenes</span>
+                    <strong style="font-size: 1.5rem; color: #0f172a; line-height: 1.1;">@Model.Matrix.TotalOrders.ToString("N0")</strong>
+                </div>
+                <div class="kpi-box" style="background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+                    <span style="display: block; color: #64748b; font-size: 0.70rem; font-weight: bold; text-transform: uppercase;">Prod.</span>
+                    <strong style="font-size: 1.5rem; color: #0f172a; line-height: 1.1;">@Model.ProducedTotal.ToString("N0")</strong>
+                </div>
+                <div class="kpi-box" style="background: #fcf1f1; padding: 12px; border-radius: 8px; border-left: 4px solid #ef4444;">
+                    <span style="display: block; color: #ef4444; font-size: 0.70rem; font-weight: bold; text-transform: uppercase;">Scrap</span>
+                    <strong style="font-size: 1.5rem; color: #7f1d1d; line-height: 1.1;">@Model.ScrapTotal.ToString("N0")</strong>
+                </div>
+            </div>
+            <div id="ordersSummaryChart" class="mini-chart-host" aria-label="Estado general de órdenes" style="display: flex; justify-content: center;"></div>
+        </div>
+    </article>
+
+    <article id="scrapPanel" class="kpi-highlight apple-card error-kpi-card compact-scrap-card"
+             data-chart-labels="@JsonSerializer.Serialize(Model.ProductionTrendChart.Labels)"
+             data-chart-production="@JsonSerializer.Serialize(Model.ProductionTrendChart.Values)"
+             data-chart-scrap="@JsonSerializer.Serialize(Model.ScrapTrendChart.Values)">
+            
+        <div class="compact-executive-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 10px;">
+            <span class="kpi-label" style="font-size: 1.1rem; font-weight: 600; color: #1e293b;">Scrap vs Producción</span>
+            <form method="get" class="quick-range-form js-async-discrete-form" data-target="#scrapPanel" style="display: flex; gap: 15px; align-items: center;">
+                <select id="selectedSubfamily" name="selectedSubfamily" class="form-select form-select-sm shadow-sm" onchange="this.form.requestSubmit();" style="width: auto; min-width: 120px;">
+                    @foreach (var subfamily in Model.Matrix.Subfamilies)
+                    {
+                        if (Model.SelectedSubfamily == subfamily)
+                        {
+                            <option value="@subfamily" selected="selected">@subfamily</option>
+                        }
+                        else
+                        {
+                            <option value="@subfamily">@subfamily</option>
+                        }
+                    }
+                </select>
+
+                <div class="btn-group shadow-sm" role="group" aria-label="Rango rápido de scrap">
+                    <button class="btn btn-sm @(Model.QuickRange == "day" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="day">Día</button>
+                    <button class="btn btn-sm @(Model.QuickRange == "week" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="week">Semana</button>
+                    <button class="btn btn-sm @(Model.QuickRange == "month" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="month">Mes</button>
+                    <button class="btn btn-sm @(Model.QuickRange == "historic" ? "btn-primary" : "btn-outline-secondary")" type="submit" name="periodType" value="historic">Anual</button>
+                </div>
+                <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                <input type="hidden" name="metricView" value="@Model.MetricView" />
+            </form>
+        </div>
+        
+        <div id="scrapVsProductionChart" class="chart-host compact-line-chart" style="width: 100%;"></div>
+    </article>
+</section>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -217,92 +230,106 @@
         let scrapChart = null;
 
         function initOrdersChart() {
-            const summaryPanel = document.getElementById('summaryPanel');
-            const ordersSummaryContainer = document.getElementById('ordersSummaryChart');
-            if (!ordersSummaryContainer || !summaryPanel) return;
-            const orderStatusLabels = JSON.parse(summaryPanel.dataset.orderLabels ?? '[]');
-            const orderStatusValues = JSON.parse(summaryPanel.dataset.orderValues ?? '[]');
-            if (ordersChart) ordersChart.destroy();
-            ordersSummaryContainer.innerHTML = '';
-            ordersChart = new ApexCharts(ordersSummaryContainer, {
-                chart: { type: 'donut', height: 240, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-                labels: orderStatusLabels,
-                series: orderStatusValues,
-                legend: { position: 'bottom' },
-                colors: ['#3078ff', '#25b46b', '#ff6b6b', '#f59e0b'],
-                stroke: { width: 2, colors: ['#fff'] },
-                dataLabels: { enabled: false },
-                plotOptions: { pie: { donut: { size: '62%' } } }
-            });
-            ordersChart.render();
+        const summaryPanel = document.getElementById('summaryPanel');
+        const ordersSummaryContainer = document.getElementById('ordersSummaryChart');
+        if (!ordersSummaryContainer || !summaryPanel) return;
+        const orderStatusLabels = JSON.parse(summaryPanel.dataset.orderLabels ?? '[]');
+        const orderStatusValues = JSON.parse(summaryPanel.dataset.orderValues ?? '[]');
+            
+        if (ordersChart) ordersChart.destroy();
+        ordersSummaryContainer.innerHTML = '';
+        ordersChart = new ApexCharts(ordersSummaryContainer, {
+        chart: { type: 'donut', height: 260, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+        labels: orderStatusLabels,
+        series: orderStatusValues,
+        legend: { position: 'bottom', fontSize: '12px', itemMargin: { horizontal: 10, vertical: 5 } },
+        colors: ['#3078ff', '#f59e0b', '#ff6b6b', '#25b46b'],
+        stroke: { width: 2, colors: ['#fff'] },
+        dataLabels: { enabled: false },
+        plotOptions: { pie: { donut: { size: '70%' } } }
+        });
+        ordersChart.render();
         }
 
         function initScrapChart() {
-            const scrapPanel = document.getElementById('scrapPanel');
-            const scrapVsProductionContainer = document.getElementById('scrapVsProductionChart');
-            if (!scrapPanel || !scrapVsProductionContainer) return;
+        const scrapPanel = document.getElementById('scrapPanel');
+        const scrapVsProductionContainer = document.getElementById('scrapVsProductionChart');
+        if (!scrapPanel || !scrapVsProductionContainer) return;
 
-            const productionTrendLabels = JSON.parse(scrapPanel.dataset.chartLabels ?? '[]');
-            const productionTrendValues = JSON.parse(scrapPanel.dataset.chartProduction ?? '[]');
-            const scrapTrendValues = JSON.parse(scrapPanel.dataset.chartScrap ?? '[]');
+        const productionTrendLabels = JSON.parse(scrapPanel.dataset.chartLabels ?? '[]');
+        const productionTrendValues = JSON.parse(scrapPanel.dataset.chartProduction ?? '[]');
+        const scrapTrendValues = JSON.parse(scrapPanel.dataset.chartScrap ?? '[]');
 
-            if (scrapChart) scrapChart.destroy();
-            scrapVsProductionContainer.innerHTML = '';
-            scrapChart = new ApexCharts(scrapVsProductionContainer, {
-                chart: { type: 'line', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-                series: [
-                    { name: 'Producción', type: 'line', data: productionTrendValues },
-                    { name: 'Scrap', type: 'line', data: scrapTrendValues }
-                ],
-                colors: ['#14b8a6', '#ef4444'],
-                stroke: { width: [3, 3], curve: 'smooth' },
-                markers: { size: 4 },
-                xaxis: { categories: productionTrendLabels },
-                yaxis: [{ title: { text: 'Cantidad' } }],
-                dataLabels: { enabled: false },
-                fill: {
-                    type: 'gradient',
-                    gradient: {
-                        shadeIntensity: 1,
-                        opacityFrom: 0.45,
-                        opacityTo: 0.1,
-                        stops: [0, 95, 100]
-                    }
-                },
-                legend: { position: 'top' }
-            });
-            scrapChart.render();
+        if (scrapChart) scrapChart.destroy();
+        scrapVsProductionContainer.innerHTML = '';
+        scrapChart = new ApexCharts(scrapVsProductionContainer, {
+        chart: { type: 'area', height: 280, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+        series: [
+        { name: 'Producción', data: productionTrendValues },
+        { name: 'Scrap', data: scrapTrendValues }
+        ],
+        colors: ['#10b981', '#ef4444'],
+        stroke: { width: 2, curve: 'smooth' },
+        markers: { size: 0 },
+        xaxis: {
+        categories: productionTrendLabels,
+        tooltip: { enabled: false }
+        },
+        yaxis: [{ title: { text: 'Cantidad' } }],
+        dataLabels: { enabled: false },
+        fill: { type: 'solid', opacity: 0.25 },
+        legend: { position: 'top', horizontalAlign: 'right' }
+        });
+        scrapChart.render();
         }
 
         async function handleAsyncFormSubmit(event) {
-            event.preventDefault();
-            const form = event.currentTarget;
-            const targetSelector = form.dataset.target;
-            if (!targetSelector) return;
+        event.preventDefault();
+        const form = event.currentTarget;
+        const targetSelector = form.dataset.target;
+        if (!targetSelector) return;
 
-            const params = new URLSearchParams(new FormData(form));
-            const url = `${form.action || window.location.pathname}?${params.toString()}`;
-            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (!response.ok) return;
+        const submitter = event.submitter;
+        const params = new URLSearchParams(new FormData(form));
 
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newTarget = doc.querySelector(targetSelector);
-            const currentTarget = document.querySelector(targetSelector);
-            if (!newTarget || !currentTarget) return;
+        // Asegurar que guardamos el periodo correcto al enviar por botones
+        if (submitter && submitter.name) {
+        params.set(submitter.name, submitter.value);
+        }
+            
+        // Si hacemos clic en Órdenes/Piezas, buscamos el periodo de tiempo activo
+        if (!params.has('periodType')) {
+        const activeBtn = form.querySelector('button.btn-primary[name="periodType"]');
+        if (activeBtn) {
+        params.set('periodType', activeBtn.value);
+        } else if (params.get('fromDate') && params.get('toDate')) {
+        // Si tiene fechas, asumimos que es custom
+        params.set('periodType', 'custom');
+        }
+        }
 
-            currentTarget.outerHTML = newTarget.outerHTML;
-            bindAsyncForms();
-            initOrdersChart();
-            initScrapChart();
+        const url = `${form.action || window.location.pathname}?${params.toString()}`;
+        const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!response.ok) return;
+
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newTarget = doc.querySelector(targetSelector);
+        const currentTarget = document.querySelector(targetSelector);
+        if (!newTarget || !currentTarget) return;
+
+        currentTarget.outerHTML = newTarget.outerHTML;
+        bindAsyncForms();
+        initOrdersChart();
+        initScrapChart();
         }
 
         function bindAsyncForms() {
-            document.querySelectorAll('.js-async-discrete-form').forEach(form => {
-                form.removeEventListener('submit', handleAsyncFormSubmit);
-                form.addEventListener('submit', handleAsyncFormSubmit);
-            });
+        document.querySelectorAll('.js-async-discrete-form').forEach(form => {
+        form.removeEventListener('submit', handleAsyncFormSubmit);
+        form.addEventListener('submit', handleAsyncFormSubmit);
+        });
         }
 
         bindAsyncForms();
