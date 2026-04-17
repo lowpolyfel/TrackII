@@ -18,34 +18,41 @@
     <table class="table gerencia-weekly-table discrete-map-table">
         <thead>
             <tr>
-                <th>Grupo</th>
                 <th>Meta diaria</th>
-                @foreach (var location in Model.Locations)
+                @foreach (var group in Model.Groups)
                 {
-                    <th>@location</th>
+                    <th>@group.DailyGoal.ToString("N0")</th>
                 }
-                <th>Total grupo</th>
+                <th>@Model.Groups.Sum(item => item.DailyGoal).ToString("N0")</th>
+            </tr>
+            <tr>
+                <th>Localidad</th>
+                @foreach (var group in Model.Groups)
+                {
+                    <th>@group.GroupName</th>
+                }
+                <th>Total localidad</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var group in Model.Groups)
+            @for (var locationIndex = 0; locationIndex < Model.Locations.Count; locationIndex++)
             {
+                var locationTotal = Model.Groups.Sum(group => group.LocationTotals[locationIndex]);
                 <tr>
-                    <td><strong>@group.GroupName</strong></td>
-                    <td><strong>@group.DailyGoal.ToString("N0")</strong></td>
-                    @foreach (var qty in group.LocationTotals)
+                    <td><strong>@Model.Locations[locationIndex]</strong></td>
+                    @foreach (var group in Model.Groups)
                     {
+                        var qty = group.LocationTotals[locationIndex];
                         <td class="@(qty == 0 ? "cell-zero" : string.Empty)">@(qty == 0 ? "-" : qty.ToString("N0"))</td>
                     }
-                    <td><strong>@group.RowTotal.ToString("N0")</strong></td>
+                    <td><strong>@locationTotal.ToString("N0")</strong></td>
                 </tr>
             }
             <tr>
                 <td><strong>Total</strong></td>
-                <td><strong>@Model.Groups.Sum(item => item.DailyGoal).ToString("N0")</strong></td>
-                @foreach (var total in Model.ColumnTotals)
+                @foreach (var group in Model.Groups)
                 {
-                    <td><strong>@total.ToString("N0")</strong></td>
+                    <td><strong>@group.RowTotal.ToString("N0")</strong></td>
                 }
                 <td><strong>@Model.GrandTotal.ToString("N0")</strong></td>
             </tr>

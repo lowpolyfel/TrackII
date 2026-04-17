@@ -148,23 +148,23 @@ public class GerenciaService
         cn.Open();
 
         using (var cmd = new MySqlCommand(@"
-            WITH latest_scan AS (
+            WITH latest_qty AS (
                 SELECT wse.wip_item_id,
-                       wse.location_id,
                        wse.qty_in,
                        ROW_NUMBER() OVER (PARTITION BY wse.wip_item_id ORDER BY wse.create_at DESC, wse.id DESC) AS rn
                 FROM wip_step_execution wse
             )
             SELECT sf.id AS subfamily_id,
                    l.name AS location_name,
-                   COALESCE(SUM(ls.qty_in), 0) AS qty_total
+                   COALESCE(SUM(lq.qty_in), 0) AS qty_total
             FROM wip_item wip
             JOIN work_order wo ON wo.id = wip.wo_order_id
             JOIN product p ON p.id = wo.product_id
             JOIN subfamily sf ON sf.id = p.id_subfamily
-            JOIN latest_scan ls ON ls.wip_item_id = wip.id AND ls.rn = 1
-            JOIN location l ON l.id = ls.location_id
-            WHERE wip.status IN ('OPEN', 'IN_PROGRESS', 'HOLD')
+            JOIN route_step rs ON rs.id = wip.current_step_id
+            JOIN location l ON l.id = rs.location_id
+            LEFT JOIN latest_qty lq ON lq.wip_item_id = wip.id AND lq.rn = 1
+            WHERE wip.status IN ('OPEN', 'IN_PROGRESS', 'HOLD', 'FINISHED')
             GROUP BY sf.id, l.name", cn))
         {
             using var rd = cmd.ExecuteReader();
