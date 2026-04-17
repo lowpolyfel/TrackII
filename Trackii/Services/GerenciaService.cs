@@ -168,11 +168,11 @@ public class GerenciaService
             vm.DailyGoalsByColumn[goal.Key] = goal.Value;
         }
 
-        foreach (var column in vm.Columns)
+        foreach (var columnName in vm.Columns)
         {
-            if (!vm.DailyGoalsByColumn.ContainsKey(column))
+            if (!vm.DailyGoalsByColumn.ContainsKey(columnName))
             {
-                vm.DailyGoalsByColumn[column] = null;
+                vm.DailyGoalsByColumn[columnName] = null;
             }
         }
 
@@ -183,9 +183,9 @@ public class GerenciaService
                 name =>
                 {
                     var row = new BackendLobbyLocationRowVm { LocationName = name };
-                    foreach (var column in vm.Columns)
+                    foreach (var columnName in vm.Columns)
                     {
-                        row.PiecesByColumn[column] = 0;
+                        row.PiecesByColumn[columnName] = 0;
                     }
 
                     return row;
@@ -219,9 +219,9 @@ public class GerenciaService
                 if (!rowByLocation.TryGetValue(locationName, out var row))
                 {
                     row = new BackendLobbyLocationRowVm { LocationName = locationName };
-                    foreach (var column in vm.Columns)
+                    foreach (var columnName in vm.Columns)
                     {
-                        row.PiecesByColumn[column] = 0;
+                        row.PiecesByColumn[columnName] = 0;
                     }
                     rowByLocation[locationName] = row;
                 }
@@ -231,16 +231,16 @@ public class GerenciaService
                     continue;
 
                 var isOpb = rd.GetBoolean("is_opb");
-                var column = isOpb && opbFamilyIds.Contains(familyId)
+                var columnName = isOpb && opbFamilyIds.Contains(familyId)
                     ? GetOpbColumnName(familyName)
                     : familyName;
 
-                if (!row.PiecesByColumn.ContainsKey(column))
+                if (!row.PiecesByColumn.ContainsKey(columnName))
                 {
-                    row.PiecesByColumn[column] = 0;
+                    row.PiecesByColumn[columnName] = 0;
                 }
 
-                row.PiecesByColumn[column] += Convert.ToInt32(rd.GetValue(rd.GetOrdinal("qty")));
+                row.PiecesByColumn[columnName] += Convert.ToInt32(rd.GetValue(rd.GetOrdinal("qty")));
             }
         }
 
