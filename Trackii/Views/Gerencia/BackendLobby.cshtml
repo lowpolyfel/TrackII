@@ -10,6 +10,7 @@
     <div>
         <h2>Lobby de Gerencia · Discretos</h2>
         <p class="subtitle" style="margin:0;">Actualización en tiempo real al cargar la vista: <strong>@Model.SnapshotAtUtc.ToString("dddd dd MMM yyyy HH:mm:ss", spanish)</strong>.</p>
+        <p class="subtitle" style="margin:0;">Periodo fijo: <strong>@Model.PeriodStart.ToString("dd MMM yyyy", spanish)</strong> a <strong>@Model.PeriodEndExclusive.AddDays(-1).ToString("dd MMM yyyy", spanish)</strong>.</p>
     </div>
     <a asp-controller="Gerencia" asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver</a>
 </div>
@@ -18,43 +19,33 @@
     <table class="table gerencia-weekly-table discrete-map-table">
         <thead>
             <tr>
-                <th>Meta diaria</th>
-                @foreach (var group in Model.Groups)
-                {
-                    <th>@group.DailyGoal.ToString("N0")</th>
-                }
-                <th>@Model.Groups.Sum(item => item.DailyGoal).ToString("N0")</th>
-            </tr>
-            <tr>
-                <th>Localidad</th>
-                @foreach (var group in Model.Groups)
-                {
-                    <th>@group.GroupName</th>
-                }
-                <th>Total localidad</th>
+                <th>Grupo lógico</th>
+                <th class="text-right">Piezas (abril 2026)</th>
+                <th class="text-right">Órdenes (abril 2026)</th>
             </tr>
         </thead>
         <tbody>
-            @for (var locationIndex = 0; locationIndex < Model.Locations.Count; locationIndex++)
+            @if (!Model.Groups.Any())
             {
-                var locationTotal = Model.Groups.Sum(group => group.LocationTotals[locationIndex]);
                 <tr>
-                    <td><strong>@Model.Locations[locationIndex]</strong></td>
-                    @foreach (var group in Model.Groups)
-                    {
-                        var qty = group.LocationTotals[locationIndex];
-                        <td class="@(qty == 0 ? "cell-zero" : string.Empty)">@(qty == 0 ? "-" : qty.ToString("N0"))</td>
-                    }
-                    <td><strong>@locationTotal.ToString("N0")</strong></td>
+                    <td colspan="3" class="text-center">Sin grupos disponibles.</td>
                 </tr>
+            }
+            else
+            {
+                @foreach (var group in Model.Groups)
+                {
+                    <tr>
+                        <td><strong>@group.LugarNombre</strong></td>
+                        <td class="text-right">@group.Piezas.ToString("N0")</td>
+                        <td class="text-right">@group.Ordenes.ToString("N0")</td>
+                    </tr>
+                }
             }
             <tr>
                 <td><strong>Total</strong></td>
-                @foreach (var group in Model.Groups)
-                {
-                    <td><strong>@group.RowTotal.ToString("N0")</strong></td>
-                }
-                <td><strong>@Model.GrandTotal.ToString("N0")</strong></td>
+                <td class="text-right"><strong>@Model.TotalPieces.ToString("N0")</strong></td>
+                <td class="text-right"><strong>@Model.TotalOrders.ToString("N0")</strong></td>
             </tr>
         </tbody>
     </table>
