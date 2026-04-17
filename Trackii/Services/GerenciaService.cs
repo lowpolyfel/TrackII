@@ -7,9 +7,11 @@ namespace Trackii.Services;
 public class GerenciaService
 {
     private readonly string _conn;
+    private readonly IConfiguration _cfg;
 
     public GerenciaService(IConfiguration cfg)
     {
+        _cfg = cfg;
         _conn = cfg.GetConnectionString("TrackiiDb")
             ?? throw new Exception("Connection string TrackiiDb no configurada");
     }
@@ -114,84 +116,178 @@ public class GerenciaService
         using var cn = new MySqlConnection(_conn);
         cn.Open();
 
-        var catalogBySubfamily = new Dictionary<int, string>();
+        var locations = new List<string>();
         using (var cmd = new MySqlCommand(@"
-            SELECT s.id AS subfamily_id,
-                   COALESCE(f.name, 'Sin familia') AS family_name,
-                   COALESCE(s.name, '') AS subfamily_name
-            FROM subfamily s
-            LEFT JOIN family f ON f.id = s.id_family
-            WHERE s.active = 1
-              AND f.active = 1", cn))
+            SELECT name
+            FROM location
+            WHERE active = 1
+            ORDER BY name", cn))
         {
             using var rd = cmd.ExecuteReader();
             while (rd.Read())
             {
-                var subfamilyId = rd.GetInt32("subfamily_id");
-                var subfamily = rd.GetString("subfamily_name").Trim();
-                var family = rd.GetString("family_name").Trim();
-
-                var groupName = subfamily.Contains("OPB", StringComparison.OrdinalIgnoreCase)
-                    ? $"{family} OPB"
-                    : family;
-
-                catalogBySubfamily[subfamilyId] = string.IsNullOrWhiteSpace(groupName) ? "Sin familia" : groupName;
+                var locationName = rd.IsDBNull(0) ? "Sin localidad" : rd.GetString(0).Trim();
+                locations.Add(string.IsNullOrWhiteSpace(locationName) ? "Sin localidad" : locationName);
             }
         }
 
-        var productionRows = new List<(string LocationName, int SubfamilyId, int WorkOrderId, int Quantity)>();
+        var families = new List<(int FamilyId, string FamilyName, bool HasOpb)>();
+        using (var cmd = new MySqlCommand(@"
+            SELECT f.id AS family_id,
+                   COALESCE(f.name, 'Sin familia') AS family_name,
+                   MAX(CASE WHEN UPPER(COALESCE(s.name, '')) LIKE '%OPB%' THEN 1 ELSE 0 END) AS has_opb
+            FROM family f
+            LEFT JOIN subfamily s ON s.id_family = f.id AND s.active = 1
+            WHERE f.active = 1
+            GROUP BY f.id, f.name
+            ORDER BY f.id", cn))
+        {
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
+            {
+                var familyName = rd.GetString("family_name").Trim();
+                families.Add((
+                    rd.GetInt32("family_id"),
+                    string.IsNullOrWhiteSpace(familyName) ? "Sin familia" : familyName,
+                    Convert.ToInt32(rd.GetValue(rd.GetOrdinal("has_opb"))) == 1
+                ));
+            }
+        }
+
+        foreach (var family in families)
+        {
+            vm.Columns.Add(family.FamilyName);
+            if (family.HasOpb)
+            {
+                vm.Columns.Add(GetOpbColumnName(family.FamilyName));
+            }
+        }
+
+        foreach (var goal in GetLobbyDailyGoals())
+        {
+            vm.DailyGoalsByColumn[goal.Key] = goal.Value;
+        }
+
+        foreach (var column in vm.Columns)
+        {
+            if (!vm.DailyGoalsByColumn.ContainsKey(column))
+            {
+                vm.DailyGoalsByColumn[column] = null;
+            }
+        }
+
+        var rowByLocation = locations
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                name => name,
+                name =>
+                {
+                    var row = new BackendLobbyLocationRowVm { LocationName = name };
+                    foreach (var column in vm.Columns)
+                    {
+                        row.PiecesByColumn[column] = 0;
+                    }
+
+                    return row;
+                },
+                StringComparer.OrdinalIgnoreCase);
+
+        var familyById = families.ToDictionary(f => f.FamilyId, f => f.FamilyName);
+        var opbFamilyIds = families.Where(f => f.HasOpb).Select(f => f.FamilyId).ToHashSet();
+
         using (var cmd = new MySqlCommand(@"
             SELECT COALESCE(l.name, 'Sin localidad') AS location_name,
-                   p.id_subfamily AS subfamily_id,
-                   wip.wo_order_id AS work_order_id,
-                   COALESCE(wse.qty_in, 0) AS qty_in
+                   f.id AS family_id,
+                   UPPER(COALESCE(sf.name, '')) LIKE '%OPB%' AS is_opb,
+                   COALESCE(SUM(wse.qty_in), 0) AS qty
             FROM wip_step_execution wse
             JOIN wip_item wip ON wip.id = wse.wip_item_id
             JOIN work_order wo ON wo.id = wip.wo_order_id
             JOIN product p ON p.id = wo.product_id
+            JOIN subfamily sf ON sf.id = p.id_subfamily
+            JOIN family f ON f.id = sf.id_family
             LEFT JOIN location l ON l.id = wse.location_id
-            WHERE wse.create_at <= @dataCutoffUtc", cn))
+            WHERE wse.create_at <= @dataCutoffUtc
+            GROUP BY location_name, f.id, is_opb", cn))
         {
             cmd.Parameters.AddWithValue("@dataCutoffUtc", vm.DataCutoffUtc);
 
             using var rd = cmd.ExecuteReader();
             while (rd.Read())
             {
-                productionRows.Add((
-                    rd.GetString("location_name"),
-                    rd.GetInt32("subfamily_id"),
-                    rd.GetInt32("work_order_id"),
-                    Convert.ToInt32(rd.GetValue(rd.GetOrdinal("qty_in")))
-                ));
+                var locationName = rd.GetString("location_name");
+                if (!rowByLocation.TryGetValue(locationName, out var row))
+                {
+                    row = new BackendLobbyLocationRowVm { LocationName = locationName };
+                    foreach (var column in vm.Columns)
+                    {
+                        row.PiecesByColumn[column] = 0;
+                    }
+                    rowByLocation[locationName] = row;
+                }
+
+                var familyId = rd.GetInt32("family_id");
+                if (!familyById.TryGetValue(familyId, out var familyName))
+                    continue;
+
+                var isOpb = rd.GetBoolean("is_opb");
+                var column = isOpb && opbFamilyIds.Contains(familyId)
+                    ? GetOpbColumnName(familyName)
+                    : familyName;
+
+                if (!row.PiecesByColumn.ContainsKey(column))
+                {
+                    row.PiecesByColumn[column] = 0;
+                }
+
+                row.PiecesByColumn[column] += Convert.ToInt32(rd.GetValue(rd.GetOrdinal("qty")));
             }
         }
 
-        var lobbyData = productionRows
-            .Select(row => new
-            {
-                row.LocationName,
-                FamilyGroupName = catalogBySubfamily.TryGetValue(row.SubfamilyId, out var familyGroupName)
-                    ? familyGroupName
-                    : "Sin familia",
-                row.WorkOrderId,
-                row.Quantity
-            })
-            .GroupBy(x => new { x.LocationName, x.FamilyGroupName })
-            .Select(g => new BackendLobbyGroupRowVm
-            {
-                LocationName = g.Key.LocationName,
-                FamilyGroupName = g.Key.FamilyGroupName,
-                Piezas = g.Sum(x => x.Quantity),
-                Ordenes = g.Select(x => x.WorkOrderId)
-                           .Distinct()
-                           .Count()
-            })
-            .OrderBy(x => x.LocationName)
-            .ThenBy(x => x.FamilyGroupName)
-            .ToList();
-
-        vm.Groups.AddRange(lobbyData);
+        vm.Rows.AddRange(rowByLocation.Values.OrderBy(row => row.LocationName));
         return vm;
+    }
+
+    private Dictionary<string, int> GetLobbyDailyGoals()
+    {
+        var defaults = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["LATERAL LED"] = 93000,
+            ["LATERAL SENSOR"] = 36500,
+            ["OPB LATERAL"] = 11500,
+            ["MINI AXIALES"] = 16500,
+            ["OPB MINI AXIAL"] = 3600,
+            ["MAXI AXIALES"] = 8500,
+            ["FOTOLOGICOS"] = 38000,
+            ["OPB FOTO"] = 3600
+        };
+
+        var fromConfig = _cfg.GetSection("Gerencia:LobbyDailyGoals").GetChildren();
+        foreach (var item in fromConfig)
+        {
+            if (!int.TryParse(item.Value, out var parsed))
+                continue;
+
+            var key = (item.Key ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(key))
+                continue;
+
+            defaults[key] = parsed;
+        }
+
+        return defaults;
+    }
+
+    private static string GetOpbColumnName(string familyName)
+    {
+        var normalized = familyName.ToUpperInvariant();
+        if (normalized.Contains("LATERAL"))
+            return "OPB LATERAL";
+        if (normalized.Contains("MINI"))
+            return "OPB MINI AXIAL";
+        if (normalized.Contains("FOTO"))
+            return "OPB FOTO";
+        return $"OPB {familyName}";
     }
 
     public GerenciaDayDetailVm GetDiscreteDayDetail(DateTime day, string? sortBy)

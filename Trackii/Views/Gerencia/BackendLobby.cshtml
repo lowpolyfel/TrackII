@@ -19,35 +19,54 @@
     <table class="table gerencia-weekly-table discrete-map-table">
         <thead>
             <tr>
-                <th>Localidad</th>
-                <th>Familia</th>
-                <th class="text-right">Piezas totales</th>
-                <th class="text-right">Órdenes totales</th>
+                <th>META DIARIA</th>
+                @foreach (var column in Model.Columns)
+                {
+                    <th class="text-right">
+                        @(Model.DailyGoalsByColumn.TryGetValue(column, out var goal) && goal.HasValue ? goal.Value.ToString("N0") : "-")
+                    </th>
+                }
+                <th class="text-right">@Model.DailyGoalsByColumn.Values.Where(v => v.HasValue).Sum(v => v!.Value).ToString("N0")</th>
+            </tr>
+            <tr>
+                <th>LOCALIDAD</th>
+                @foreach (var column in Model.Columns)
+                {
+                    <th>@column</th>
+                }
+                <th class="text-right">TOTAL LOCALIDAD</th>
             </tr>
         </thead>
         <tbody>
-            @if (!Model.Groups.Any())
+            @if (!Model.Rows.Any())
             {
                 <tr>
-                    <td colspan="4" class="text-center">Sin producción disponible.</td>
+                    <td colspan="@(Model.Columns.Count + 2)" class="text-center">Sin producción disponible.</td>
                 </tr>
             }
             else
             {
-                @foreach (var group in Model.Groups)
+                @foreach (var row in Model.Rows)
                 {
                     <tr>
-                        <td><strong>@group.LocationName</strong></td>
-                        <td>@group.FamilyGroupName</td>
-                        <td class="text-right">@group.Piezas.ToString("N0")</td>
-                        <td class="text-right">@group.Ordenes.ToString("N0")</td>
+                        <td><strong>@row.LocationName</strong></td>
+                        @foreach (var column in Model.Columns)
+                        {
+                            var qty = row.PiecesByColumn.TryGetValue(column, out var value) ? value : 0;
+                            <td class="text-right">@(qty == 0 ? "-" : qty.ToString("N0"))</td>
+                        }
+                        <td class="text-right"><strong>@row.TotalPieces.ToString("N0")</strong></td>
                     </tr>
                 }
             }
             <tr>
-                <td colspan="2"><strong>Total global</strong></td>
-                <td class="text-right"><strong>@Model.TotalPieces.ToString("N0")</strong></td>
-                <td class="text-right"><strong>@Model.TotalOrders.ToString("N0")</strong></td>
+                <td><strong>Total</strong></td>
+                @foreach (var column in Model.Columns)
+                {
+                    var total = Model.TotalsByColumn.TryGetValue(column, out var value) ? value : 0;
+                    <td class="text-right"><strong>@total.ToString("N0")</strong></td>
+                }
+                <td class="text-right"><strong>@Model.GrandTotalPieces.ToString("N0")</strong></td>
             </tr>
         </tbody>
     </table>
