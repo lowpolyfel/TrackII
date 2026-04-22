@@ -16,19 +16,21 @@ public class ExcelGeneratorService
 
     public ExcelGeneratorVm GetPreview(int previewCount = 10)
     {
-        var rows = GetRows();
-        var maxSteps = rows.Count == 0 ? 0 : rows.Max(r => r.RouteSteps.Count);
+        var routesRows = GetRows();
+        var staleOrdersRows = GetStaleOrdersRows();
+        var maxSteps = routesRows.Count == 0 ? 0 : routesRows.Max(r => r.RouteSteps.Count);
 
         return new ExcelGeneratorVm
         {
-            TotalRows = rows.Count,
+            TotalRows = routesRows.Count,
             MaxSteps = maxSteps,
+            StaleOrdersTotalRows = staleOrdersRows.Count,
             Headers = BuildHeaders(maxSteps),
-            PreviewRows = rows.Take(previewCount).ToList()
+            PreviewRows = routesRows.Take(previewCount).ToList()
         };
     }
 
-    public byte[] BuildExcelFile()
+    public byte[] BuildRoutesExcelFile()
     {
         var rows = GetRows();
         var maxSteps = rows.Count == 0 ? 0 : rows.Max(r => r.RouteSteps.Count);
@@ -37,6 +39,17 @@ public class ExcelGeneratorService
 
         using var workbook = new XLWorkbook();
         BuildRoutesBySubfamilySheet(workbook, headers, rows, maxSteps);
+
+        using var ms = new MemoryStream();
+        workbook.SaveAs(ms);
+        return ms.ToArray();
+    }
+
+    public byte[] BuildStaleOrdersExcelFile()
+    {
+        var staleOrders = GetStaleOrdersRows();
+
+        using var workbook = new XLWorkbook();
         BuildStaleOrdersSheet(workbook, staleOrders);
 
         using var ms = new MemoryStream();
