@@ -109,17 +109,12 @@ public class GerenciaService
 
     public GerenciaBackendLobbyVm GetBackendLobby(string? mode)
     {
-        var normalizedMode = string.Equals(mode, GerenciaBackendLobbyVm.OrdersSinceMode, StringComparison.OrdinalIgnoreCase)
-            ? GerenciaBackendLobbyVm.OrdersSinceMode
-            : GerenciaBackendLobbyVm.FullInventoryMode;
-        var ordersOpenedFromDate = new DateTime(2026, 3, 13, 0, 0, 0, DateTimeKind.Utc);
-
         var vm = new GerenciaBackendLobbyVm
         {
             SnapshotAtUtc = CurrentCutoffUtc,
             DataCutoffUtc = CurrentCutoffUtc,
-            ViewMode = normalizedMode,
-            OrdersOpenedFromDate = normalizedMode == GerenciaBackendLobbyVm.OrdersSinceMode ? ordersOpenedFromDate : null
+            ViewMode = GerenciaBackendLobbyVm.FullInventoryMode,
+            OrdersOpenedFromDate = null
         };
 
         using var cn = new MySqlConnection(_conn);
@@ -177,8 +172,13 @@ public class GerenciaService
         using (var cmd = new MySqlCommand(@"
             SELECT l.id AS location_id,
                        CASE
+                           WHEN COALESCE(l.name, '') LIKE '%Alloy%' THEN 'Alloy'
                            WHEN l.id = 8 OR COALESCE(l.name, '') LIKE '%Backfill%' THEN 'Backfill'
+                           WHEN COALESCE(l.name, '') LIKE '%Molde%' THEN 'Moldeo'
                            WHEN COALESCE(l.name, '') LIKE '%Fast%' THEN 'FAST CAST'
+                           WHEN COALESCE(l.name, '') LIKE '%Inspec%' THEN 'Inspeccion Final'
+                           WHEN COALESCE(l.name, '') LIKE '%Tie%' THEN 'Tie Bar'
+                           WHEN COALESCE(l.name, '') LIKE '%Tin%' THEN 'Tin Plate'
                            WHEN COALESCE(l.name, '') LIKE '%Emp%' THEN 'Empaque'
                            WHEN COALESCE(l.name, '') LIKE '%QC%' OR COALESCE(l.name, '') LIKE '%Q.C.%' OR COALESCE(l.name, '') LIKE '%Calidad%' THEN 'QC'
                            WHEN COALESCE(l.name, '') LIKE '%Prueba%' THEN 'Prueba Electrica'
@@ -205,7 +205,8 @@ public class GerenciaService
                     GROUP BY wip_item_id
                 ) latest ON latest.last_step_id = wse.id
             ) last_qty ON last_qty.wip_item_id = wip.id
-            WHERE wo.status IN ('OPEN', 'IN_PROGRESS')
+            WHERE wo.active = 1
+              AND wip.status = 'ACTIVE'
             GROUP BY location_id, location_name, f.id, is_opb", cn))
         {
             using var rd = cmd.ExecuteReader();
@@ -243,7 +244,8 @@ public class GerenciaService
         }
 
         vm.Rows.AddRange(rowByLocation.Values
-            .OrderBy(row => row.LocationName));
+            .OrderBy(row => GetBackendLobbyLocationOrder(row.LocationName))
+            .ThenBy(row => row.LocationName, StringComparer.OrdinalIgnoreCase));
 
         vm.Groups.AddRange(
             vm.Rows.SelectMany(row => row.PiecesByColumn.Select(cell => new BackendLobbyGroupRowVm
@@ -259,17 +261,12 @@ public class GerenciaService
 
     public GerenciaLobbyInventoryCellDetailVm GetBackendLobbyCellDetail(string location, string familyGroup, string? mode)
     {
-        var normalizedMode = string.Equals(mode, GerenciaBackendLobbyVm.OrdersSinceMode, StringComparison.OrdinalIgnoreCase)
-            ? GerenciaBackendLobbyVm.OrdersSinceMode
-            : GerenciaBackendLobbyVm.FullInventoryMode;
-        var ordersOpenedFromDate = new DateTime(2026, 3, 13, 0, 0, 0, DateTimeKind.Utc);
-
         var vm = new GerenciaLobbyInventoryCellDetailVm
         {
             Location = location.Trim(),
             FamilyGroup = familyGroup.Trim(),
-            ViewMode = normalizedMode,
-            OrdersOpenedFromDate = normalizedMode == GerenciaBackendLobbyVm.OrdersSinceMode ? ordersOpenedFromDate : null
+            ViewMode = GerenciaBackendLobbyVm.FullInventoryMode,
+            OrdersOpenedFromDate = null
         };
 
         var isOpbColumn = vm.FamilyGroup.StartsWith("OPB ", StringComparison.OrdinalIgnoreCase);
@@ -287,8 +284,13 @@ public class GerenciaService
                    wip.status AS wip_status,
                    wip.created_at,
                    CASE
+                       WHEN COALESCE(l.name, '') LIKE '%Alloy%' THEN 'Alloy'
                        WHEN l.id = 8 OR COALESCE(l.name, '') LIKE '%Backfill%' THEN 'Backfill'
+                       WHEN COALESCE(l.name, '') LIKE '%Molde%' THEN 'Moldeo'
                        WHEN COALESCE(l.name, '') LIKE '%Fast%' THEN 'FAST CAST'
+                       WHEN COALESCE(l.name, '') LIKE '%Inspec%' THEN 'Inspeccion Final'
+                       WHEN COALESCE(l.name, '') LIKE '%Tie%' THEN 'Tie Bar'
+                       WHEN COALESCE(l.name, '') LIKE '%Tin%' THEN 'Tin Plate'
                        WHEN COALESCE(l.name, '') LIKE '%Emp%' THEN 'Empaque'
                        WHEN COALESCE(l.name, '') LIKE '%QC%' OR COALESCE(l.name, '') LIKE '%Q.C.%' OR COALESCE(l.name, '') LIKE '%Calidad%' THEN 'QC'
                        WHEN COALESCE(l.name, '') LIKE '%Prueba%' THEN 'Prueba Electrica'
@@ -313,7 +315,8 @@ public class GerenciaService
                     GROUP BY wip_item_id
                 ) latest ON latest.last_step_id = wse.id
             ) last_qty ON last_qty.wip_item_id = wip.id
-            WHERE wo.status IN ('OPEN', 'IN_PROGRESS')
+            WHERE wo.active = 1
+              AND wip.status = 'ACTIVE'
               AND COALESCE(f.name, 'Sin familia') = @baseFamily
               AND (
                     @isOpbColumn = 0 AND UPPER(COALESCE(sf.name, '')) NOT LIKE '%OPB%'
@@ -346,6 +349,25 @@ public class GerenciaService
         }
 
         return vm;
+    }
+
+    private static int GetBackendLobbyLocationOrder(string locationName)
+    {
+        return locationName.Trim().ToUpperInvariant() switch
+        {
+            "ALLOY" => 1,
+            "BACKFILL" => 2,
+            "MOLDEO" => 3,
+            "MODELO" => 3,
+            "FAST CAST" => 4,
+            "INSPECCION FINAL" => 5,
+            "TIE BAR" => 6,
+            "TIN PLATE" => 7,
+            "PRUEBA ELECTRICA" => 8,
+            "EMPAQUE" => 9,
+            "QC" => 10,
+            _ => 999
+        };
     }
 
     private Dictionary<string, int> GetLobbyDailyGoals()
