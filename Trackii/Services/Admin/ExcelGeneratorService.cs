@@ -169,7 +169,7 @@ public class ExcelGeneratorService
             daysColumnRange.Style.NumberFormat.Format = "0";
             daysColumnRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             daysColumnRange.AddConditionalFormat()
-                .WhenGreaterThanOrEqual(10)
+                .WhenGreaterThan(9)
                 .Fill.SetBackgroundColor(XLColor.FromHtml("#FECACA"))
                 .Font.SetFontColor(XLColor.FromHtml("#991B1B"));
 
