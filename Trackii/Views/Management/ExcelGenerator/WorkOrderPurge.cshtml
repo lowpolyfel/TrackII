@@ -20,13 +20,14 @@
 
         <div class="purge-upload-row">
             <input type="file" id="excelFile" name="excelFile" class="input" accept=".xlsx" required />
+            <input type="text" id="sheetName" name="sheetName" class="input purge-sheet-input" value="Reports" placeholder="Nombre de hoja (ej: Reports)" />
             <button type="submit" class="btn btn-primary">
                 <i class="fa-solid fa-bolt"></i>
                 Analizar archivo
             </button>
         </div>
 
-        <div class="purge-hint">Solo se utiliza la columna A (de arriba hacia abajo hasta el último dato).</div>
+        <div class="purge-hint">Por defecto se analiza la hoja <strong>Reports</strong> (normalmente la #3). Solo se utiliza la columna A.</div>
     </form>
 
     <div id="purgeProgress" class="purge-progress hidden" aria-live="polite">
@@ -43,6 +44,10 @@
 
     <section id="purgeResults" class="purge-results hidden">
         <div class="kpi-grid purge-kpis">
+            <article class="card kpi-card purge-kpi">
+                <div class="kpi-title">Hoja analizada</div>
+                <div id="kpiSheetUsed" class="kpi-value kpi-text">-</div>
+            </article>
             <article class="card kpi-card purge-kpi">
                 <div class="kpi-title">Filas leídas (col. A)</div>
                 <div id="kpiRowsRead" class="kpi-value">0</div>
@@ -150,6 +155,9 @@
             }
 
             setProgress(100);
+
+            const sheetEl = document.getElementById('kpiSheetUsed');
+            if (sheetEl) sheetEl.textContent = payload.sheetUsed || '-';
 
             setKpiValue('kpiRowsRead', payload.totalRowsRead);
             setKpiValue('kpiExcelUnique', payload.uniqueWorkOrdersInExcel);

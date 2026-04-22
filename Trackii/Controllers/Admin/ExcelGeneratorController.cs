@@ -71,7 +71,7 @@ public class ExcelGeneratorController : Controller
 
     [HttpPost("WorkOrderPurge/Analyze")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AnalyzeWorkOrderPurge(IFormFile? excelFile, CancellationToken cancellationToken)
+    public async Task<IActionResult> AnalyzeWorkOrderPurge(IFormFile? excelFile, string? sheetName, CancellationToken cancellationToken)
     {
         if (excelFile is null || excelFile.Length == 0)
         {
@@ -85,8 +85,16 @@ public class ExcelGeneratorController : Controller
         }
 
         await using var stream = excelFile.OpenReadStream();
-        var result = await _service.AnalyzeWorkOrderPurgeAsync(stream, cancellationToken);
+        var targetSheet = string.IsNullOrWhiteSpace(sheetName) ? "Reports" : sheetName.Trim();
+        try
+        {
+            var result = await _service.AnalyzeWorkOrderPurgeAsync(stream, targetSheet, cancellationToken);
+            return Json(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
 
-        return Json(result);
     }
 }

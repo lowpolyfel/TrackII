@@ -331,11 +331,18 @@ public class ExcelGeneratorService
         };
     }
 
-    public async Task<WorkOrderPurgeAnalysisVm> AnalyzeWorkOrderPurgeAsync(Stream excelStream, CancellationToken cancellationToken = default)
+    public async Task<WorkOrderPurgeAnalysisVm> AnalyzeWorkOrderPurgeAsync(Stream excelStream, string sheetName = "Reports", CancellationToken cancellationToken = default)
     {
         using var workbook = new XLWorkbook(excelStream);
-        var worksheet = workbook.Worksheets.FirstOrDefault()
-            ?? throw new InvalidOperationException("El archivo no contiene hojas de cálculo.");
+        var targetSheet = string.IsNullOrWhiteSpace(sheetName) ? "Reports" : sheetName.Trim();
+        var worksheet = workbook.Worksheets.FirstOrDefault(w =>
+            string.Equals(w.Name, targetSheet, StringComparison.OrdinalIgnoreCase));
+
+        if (worksheet is null)
+        {
+            var availableSheets = string.Join(", ", workbook.Worksheets.Select(w => w.Name));
+            throw new InvalidOperationException($"No se encontró la hoja '{targetSheet}'. Hojas disponibles: {availableSheets}");
+        }
 
         var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 0;
         var allRowsRead = 0;
@@ -383,6 +390,7 @@ public class ExcelGeneratorService
 
         return new WorkOrderPurgeAnalysisVm
         {
+            SheetUsed = worksheet.Name,
             TotalRowsRead = allRowsRead,
             UniqueWorkOrdersInExcel = workOrdersFromExcel.Count,
             ExistingInDatabase = existingInDb.Count,

@@ -204,6 +204,11 @@
     min-width: min(520px, 100%);
 }
 
+.purge-sheet-input {
+    min-width: 220px !important;
+    max-width: 320px;
+}
+
 .purge-hint {
     margin-top: 10px;
     color: var(--text-muted);
@@ -248,6 +253,11 @@
 
 .purge-kpis .purge-kpi {
     min-height: 128px;
+}
+
+.kpi-value.kpi-text {
+    font-size: 1.15rem;
+    letter-spacing: normal;
 }
 
 .purge-kpi-alert .kpi-value {

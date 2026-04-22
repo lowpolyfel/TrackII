@@ -43,6 +43,7 @@ public class ActiveOrderExcelRowVm
 
 public class WorkOrderPurgeAnalysisVm
 {
+    public string SheetUsed { get; set; } = string.Empty;
     public int TotalRowsRead { get; set; }
     public int UniqueWorkOrdersInExcel { get; set; }
     public int ExistingInDatabase { get; set; }
