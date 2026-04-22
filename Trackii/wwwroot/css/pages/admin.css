@@ -58,18 +58,23 @@
 
 .excel-generator-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    align-items: stretch;
 }
 
 .excel-generator-option {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 14px;
-    align-items: flex-start;
+    align-items: start;
     text-decoration: none;
     color: inherit;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(227, 239, 255, 0.95));
+    border: 1px solid rgba(29, 78, 216, 0.12);
+    border-radius: 20px;
+    padding: 18px;
+    min-height: 190px;
     transition: transform .18s ease, box-shadow .18s ease;
 }
 
@@ -78,13 +83,24 @@
     box-shadow: 0 24px 44px rgba(30, 73, 149, 0.12);
 }
 
+.excel-generator-option,
+.excel-generator-option:hover,
+.excel-generator-option:focus,
+.excel-generator-option:visited {
+    text-decoration: none;
+    color: var(--text-main);
+}
+
 .excel-generator-option h3 {
     margin: 0 0 8px;
+    font-size: 1.18rem;
+    line-height: 1.25;
 }
 
 .excel-generator-option p {
     margin: 0;
     color: var(--text-muted);
+    line-height: 1.45;
 }
 
 .excel-generator-meta {
@@ -92,7 +108,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 8px;
+    margin-top: 12px;
     gap: 10px;
 }
 
@@ -110,6 +126,20 @@
     align-items: center;
     justify-content: center;
     color: #fff;
+}
+
+.excel-generator-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(29, 78, 216, 0.22);
+    color: #1d4ed8;
+    background: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-size: .85rem;
 }
 
 .excel-generator-icon.icon-routes {
