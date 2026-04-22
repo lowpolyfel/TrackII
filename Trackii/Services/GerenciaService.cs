@@ -125,13 +125,6 @@ public class GerenciaService
         using var cn = new MySqlConnection(_conn);
         cn.Open();
 
-        // Definimos exactamente las localidades que nos interesan en el orden requerido
-        var locations = new List<string>
-        {
-            "Alloy", "Backfill", "FAST CAST", "Moldeo", "Inspeccion Final",
-            "Tie Bar", "Tin Plate", "Prueba Electrica", "Empaque", "QC"
-        };
-
         var families = new List<(int FamilyId, string FamilyName, bool HasOpb)>();
         using (var cmd = new MySqlCommand(@"
             SELECT f.id AS family_id,
@@ -176,21 +169,7 @@ public class GerenciaService
                 vm.DailyGoalsByColumn[col] = null;
             }
         }
-        var rowByLocation = locations
-         .Distinct(StringComparer.OrdinalIgnoreCase)
-         .ToDictionary(
-             name => name,
-             name =>
-             {
-                 var row = new BackendLobbyLocationRowVm { LocationName = name };
-                 foreach (var columnName in vm.Columns)
-                 {
-                     row.PiecesByColumn[columnName] = 0;
-                 }
-
-                 return row;
-             },
-             StringComparer.OrdinalIgnoreCase);
+        var rowByLocation = new Dictionary<string, BackendLobbyLocationRowVm>(StringComparer.OrdinalIgnoreCase);
 
         var familyById = families.ToDictionary(f => f.FamilyId, f => f.FamilyName);
         var opbFamilyIds = families.Where(f => f.HasOpb).Select(f => f.FamilyId).ToHashSet();
@@ -227,7 +206,6 @@ public class GerenciaService
                 ) latest ON latest.last_step_id = wse.id
             ) last_qty ON last_qty.wip_item_id = wip.id
             WHERE wo.status IN ('OPEN', 'IN_PROGRESS')
-              AND COALESCE(last_qty.last_activity_date, wip.created_at) >= '2026-04-01 00:00:00'
             GROUP BY location_id, location_name, f.id, is_opb", cn))
         {
             using var rd = cmd.ExecuteReader();
@@ -264,15 +242,8 @@ public class GerenciaService
             }
         }
 
-        // Creamos un diccionario con el orden exacto para ordenar la salida
-        var locationOrder = locations
-            .Select((name, index) => new { name, index })
-            .ToDictionary(x => x.name, x => x.index, StringComparer.OrdinalIgnoreCase);
-
-        // Filtramos solo las localidades que nos interesan y las ordenamos
         vm.Rows.AddRange(rowByLocation.Values
-            .Where(row => locationOrder.ContainsKey(row.LocationName))
-            .OrderBy(row => locationOrder[row.LocationName]));
+            .OrderBy(row => row.LocationName));
 
         vm.Groups.AddRange(
             vm.Rows.SelectMany(row => row.PiecesByColumn.Select(cell => new BackendLobbyGroupRowVm
@@ -343,25 +314,13 @@ public class GerenciaService
                 ) latest ON latest.last_step_id = wse.id
             ) last_qty ON last_qty.wip_item_id = wip.id
             WHERE wo.status IN ('OPEN', 'IN_PROGRESS')
-              AND COALESCE(last_qty.last_activity_date, wip.created_at) >= '2026-04-01 00:00:00'
               AND COALESCE(f.name, 'Sin familia') = @baseFamily
               AND (
                     @isOpbColumn = 0 AND UPPER(COALESCE(sf.name, '')) NOT LIKE '%OPB%'
                     OR @isOpbColumn = 1 AND UPPER(COALESCE(sf.name, '')) LIKE '%OPB%'
                   )
-              AND (
-                    CASE
-                        WHEN l.id = 8 OR COALESCE(l.name, '') LIKE '%Backfill%' THEN 'Backfill'
-                        WHEN COALESCE(l.name, '') LIKE '%Fast%' THEN 'FAST CAST'
-                        WHEN COALESCE(l.name, '') LIKE '%Emp%' THEN 'Empaque'
-                        WHEN COALESCE(l.name, '') LIKE '%QC%' OR COALESCE(l.name, '') LIKE '%Q.C.%' OR COALESCE(l.name, '') LIKE '%Calidad%' THEN 'QC'
-                        WHEN COALESCE(l.name, '') LIKE '%Prueba%' THEN 'Prueba Electrica'
-                        ELSE COALESCE(l.name, 'Sin localidad')
-                    END
-                  ) = @location
             ORDER BY COALESCE(last_qty.last_activity_date, wip.created_at) DESC, wo.wo_number", cn);
 
-        cmd.Parameters.AddWithValue("@location", vm.Location);
         cmd.Parameters.AddWithValue("@baseFamily", baseFamily);
         cmd.Parameters.AddWithValue("@isOpbColumn", isOpbColumn ? 1 : 0);
 
