@@ -178,27 +178,13 @@
         .table-sm th, .table-sm td { font-size: 0.75rem; padding: 0.4rem; }
     }
 
-    .mode-switch-wrapper {
-        margin-top: 16px;
-        display: flex;
-        justify-content: flex-end;
-        position: sticky;
-        bottom: 8px;
-        z-index: 20;
-    }
 </style>
 
 <div class="page-header d-flex justify-content-between align-items-center mb-4 pt-3">
     <div>
         <h2 class="m-0" style="color: #2c3e50; font-weight: 800;">War Room · Producción</h2>
         <small class="text-muted"><i class="fa-regular fa-clock"></i> Corte: @Model.DataCutoffUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm", spanish)</small>
-        @if (Model.ViewMode == Trackii.Models.Gerencia.GerenciaBackendLobbyVm.OrdersSinceMode && Model.OrdersOpenedFromDate.HasValue)
-        {
-            <small class="d-block text-muted">
-                <i class="fa-solid fa-filter"></i>
-                Modo: órdenes abiertas desde @Model.OrdersOpenedFromDate.Value.ToString("dd/MM/yyyy")
-            </small>
-        }
+        <small class="d-block text-muted"><i class="fa-solid fa-layer-group"></i> Inventario completo en piso (work_order.active = 1 y wip activo).</small>
     </div>
     <div class="btn-group shadow-sm">
         <button type="button" onclick="openSidebarMenu()" class="btn btn-dark">
@@ -439,25 +425,6 @@
             </tbody>
         </table>
     </div>
-</div>
-
-<div class="mode-switch-wrapper">
-    @if (Model.ViewMode == Trackii.Models.Gerencia.GerenciaBackendLobbyVm.OrdersSinceMode)
-    {
-        <a asp-action="BackendLobby"
-           asp-route-mode="@Trackii.Models.Gerencia.GerenciaBackendLobbyVm.FullInventoryMode"
-           class="btn btn-dark shadow-sm">
-            <i class="fa-solid fa-table-cells"></i> Ver inventario completo
-        </a>
-    }
-    else
-    {
-        <a asp-action="BackendLobby"
-           asp-route-mode="@Trackii.Models.Gerencia.GerenciaBackendLobbyVm.OrdersSinceMode"
-           class="btn btn-outline-dark shadow-sm">
-            <i class="fa-solid fa-filter"></i> Ver órdenes abiertas desde 13/04/2026
-        </a>
-    }
 </div>
 
 <script>
