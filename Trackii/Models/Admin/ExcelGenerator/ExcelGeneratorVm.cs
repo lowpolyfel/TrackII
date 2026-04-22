@@ -25,6 +25,7 @@ public class ExcelGeneratorRowVm
 public class ActiveOrdersExcelVm
 {
     public int TotalRows { get; set; }
+    public string Sort { get; set; } = "oldest";
     public List<ActiveOrderExcelRowVm> PreviewRows { get; set; } = new();
 }
 

@@ -8,7 +8,7 @@
     <div class="page-header">
         <div>
             <h2>Órdenes activas congeladas</h2>
-            <p class="subtitle">Órdenes activas ordenadas de la más antigua a la más reciente, con localidad y días detenida.</p>
+            <p class="subtitle">Por defecto se ordenan de la más antigua a la más reciente. También puedes ordenar por días parada.</p>
         </div>
 
         <div class="header-actions">
@@ -16,8 +16,21 @@
                 <i class="fa-solid fa-arrow-left"></i>
                 Regresar
             </a>
+            <form method="get" action="/Admin/ExcelGenerator/ActiveOrders" class="active-orders-sort-form">
+                <select name="sort" class="input">
+                    <option value="oldest" selected="@(Model.Sort == "oldest" ? "selected" : null)">Más antigua a más reciente (default)</option>
+                    <option value="newest" selected="@(Model.Sort == "newest" ? "selected" : null)">Más reciente a más antigua</option>
+                    <option value="days_desc" selected="@(Model.Sort == "days_desc" ? "selected" : null)">Días parada: descendente</option>
+                    <option value="days_asc" selected="@(Model.Sort == "days_asc" ? "selected" : null)">Días parada: ascendente</option>
+                </select>
+                <button type="submit" class="btn btn-secondary">
+                    <i class="fa-solid fa-filter"></i>
+                    Aplicar
+                </button>
+            </form>
             <form method="post" action="/Admin/ExcelGenerator/ActiveOrders/Export">
                 @Html.AntiForgeryToken()
+                <input type="hidden" name="sort" value="@Model.Sort" />
                 <button type="submit" class="btn btn-primary">
                     <i class="fa-solid fa-file-excel"></i>
                     Exportar Excel estético

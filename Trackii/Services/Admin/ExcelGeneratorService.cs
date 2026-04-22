@@ -51,19 +51,21 @@ public class ExcelGeneratorService
         return ms.ToArray();
     }
 
-    public ActiveOrdersExcelVm GetActiveOrdersPreview(int previewCount = 30)
+    public ActiveOrdersExcelVm GetActiveOrdersPreview(string sort = "oldest", int previewCount = 30)
     {
-        var rows = GetActiveOrdersRows();
+        var normalizedSort = NormalizeSort(sort);
+        var rows = GetActiveOrdersRows(normalizedSort);
         return new ActiveOrdersExcelVm
         {
             TotalRows = rows.Count,
+            Sort = normalizedSort,
             PreviewRows = rows.Take(previewCount).ToList()
         };
     }
 
-    public byte[] BuildActiveOrdersExcelFile()
+    public byte[] BuildActiveOrdersExcelFile(string sort = "oldest")
     {
-        var rows = GetActiveOrdersRows();
+        var rows = GetActiveOrdersRows(NormalizeSort(sort));
 
         using var workbook = new XLWorkbook();
         BuildActiveOrdersSheet(workbook, rows);
@@ -260,9 +262,16 @@ public class ExcelGeneratorService
         return headers;
     }
 
-    private List<ActiveOrderExcelRowVm> GetActiveOrdersRows()
+    private List<ActiveOrderExcelRowVm> GetActiveOrdersRows(string sort)
     {
         var rows = new List<ActiveOrderExcelRowVm>();
+        var orderBy = sort switch
+        {
+            "days_desc" => "days_stopped DESC, created_at ASC, wo.wo_number ASC",
+            "days_asc" => "days_stopped ASC, created_at ASC, wo.wo_number ASC",
+            "newest" => "created_at DESC, wo.wo_number DESC",
+            _ => "created_at ASC, wo.wo_number ASC"
+        };
 
         using var cn = new MySqlConnection(_conn);
         cn.Open();
@@ -288,7 +297,7 @@ public class ExcelGeneratorService
                 GROUP BY wse.wip_item_id
             ) last_exec ON last_exec.wip_item_id = wip.id
             WHERE wo.status IN ('OPEN', 'IN_PROGRESS', 'HOLD')
-            ORDER BY created_at ASC, wo.wo_number ASC
+            ORDER BY " + orderBy + @"
         ", cn);
 
         using var rd = cmd.ExecuteReader();
@@ -308,5 +317,16 @@ public class ExcelGeneratorService
         }
 
         return rows;
+    }
+
+    private static string NormalizeSort(string? sort)
+    {
+        return sort?.Trim().ToLowerInvariant() switch
+        {
+            "days_desc" => "days_desc",
+            "days_asc" => "days_asc",
+            "newest" => "newest",
+            _ => "oldest"
+        };
     }
 }

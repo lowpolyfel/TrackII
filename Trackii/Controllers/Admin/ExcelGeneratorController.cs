@@ -44,17 +44,17 @@ public class ExcelGeneratorController : Controller
     }
 
     [HttpGet("ActiveOrders")]
-    public IActionResult ActiveOrders()
+    public IActionResult ActiveOrders([FromQuery] string? sort = "oldest")
     {
-        var vm = _service.GetActiveOrdersPreview();
+        var vm = _service.GetActiveOrdersPreview(sort ?? "oldest");
         return View($"{ViewBase}ActiveOrders.cshtml", vm);
     }
 
     [HttpPost("ActiveOrders/Export")]
     [ValidateAntiForgeryToken]
-    public IActionResult ExportActiveOrders()
+    public IActionResult ExportActiveOrders([FromForm] string? sort = "oldest")
     {
-        var fileBytes = _service.BuildActiveOrdersExcelFile();
+        var fileBytes = _service.BuildActiveOrdersExcelFile(sort ?? "oldest");
         var fileName = $"Ordenes_Activas_{DateTime.UtcNow:yyyyMMdd_HHmm}.xlsx";
 
         return File(
