@@ -273,9 +273,9 @@ public class ExcelGeneratorService
                    COALESCE(wip.status, 'SIN WIP') AS wip_status,
                    p.part_number,
                    COALESCE(l.name, 'Sin localidad') AS frozen_location,
-                   COALESCE(wo.creation_datetime, NOW()) AS created_at,
-                   COALESCE(last_exec.last_update_at, wip.created_at, wo.creation_datetime, NOW()) AS last_movement_at,
-                   DATEDIFF(NOW(), COALESCE(last_exec.last_update_at, wip.created_at, wo.creation_datetime, NOW())) AS days_stopped
+                   COALESCE(wip.created_at, last_exec.last_update_at, NOW()) AS created_at,
+                   COALESCE(last_exec.last_update_at, wip.created_at, NOW()) AS last_movement_at,
+                   DATEDIFF(NOW(), COALESCE(last_exec.last_update_at, wip.created_at, NOW())) AS days_stopped
             FROM work_order wo
             JOIN product p ON p.id = wo.product_id
             LEFT JOIN wip_item wip ON wip.wo_order_id = wo.id
