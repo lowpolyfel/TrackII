@@ -40,3 +40,12 @@ public class ActiveOrderExcelRowVm
     public DateTime LastMovementAt { get; set; }
     public int DaysStopped { get; set; }
 }
+
+public class WorkOrderPurgeAnalysisVm
+{
+    public int TotalRowsRead { get; set; }
+    public int UniqueWorkOrdersInExcel { get; set; }
+    public int ExistingInDatabase { get; set; }
+    public int MissingInDatabase { get; set; }
+    public List<string> MissingWorkOrders { get; set; } = new();
+}

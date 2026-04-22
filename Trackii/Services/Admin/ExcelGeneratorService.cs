@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using MySql.Data.MySqlClient;
 using Trackii.Models.Admin.ExcelGenerator;
+using System.Data;
 
 namespace Trackii.Services.Admin;
 
@@ -328,5 +329,95 @@ public class ExcelGeneratorService
             "newest" => "newest",
             _ => "oldest"
         };
+    }
+
+    public async Task<WorkOrderPurgeAnalysisVm> AnalyzeWorkOrderPurgeAsync(Stream excelStream, CancellationToken cancellationToken = default)
+    {
+        using var workbook = new XLWorkbook(excelStream);
+        var worksheet = workbook.Worksheets.FirstOrDefault()
+            ?? throw new InvalidOperationException("El archivo no contiene hojas de cálculo.");
+
+        var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 0;
+        var allRowsRead = 0;
+        var workOrdersFromExcel = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var row = 1; row <= lastRow; row++)
+        {
+            allRowsRead++;
+            var wo = worksheet.Cell(row, 1).GetString().Trim();
+            if (!string.IsNullOrWhiteSpace(wo))
+            {
+                workOrdersFromExcel.Add(wo);
+            }
+        }
+
+        var existingInDb = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (workOrdersFromExcel.Count > 0)
+        {
+            using var cn = new MySqlConnection(_conn);
+            await cn.OpenAsync(cancellationToken);
+
+            const int chunkSize = 1000;
+            var batch = new List<string>(chunkSize);
+
+            foreach (var wo in workOrdersFromExcel)
+            {
+                batch.Add(wo);
+                if (batch.Count >= chunkSize)
+                {
+                    await LoadExistingWorkOrdersBatchAsync(cn, batch, existingInDb, cancellationToken);
+                    batch.Clear();
+                }
+            }
+
+            if (batch.Count > 0)
+            {
+                await LoadExistingWorkOrdersBatchAsync(cn, batch, existingInDb, cancellationToken);
+            }
+        }
+
+        var missing = workOrdersFromExcel
+            .Where(wo => !existingInDb.Contains(wo))
+            .OrderBy(wo => wo, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return new WorkOrderPurgeAnalysisVm
+        {
+            TotalRowsRead = allRowsRead,
+            UniqueWorkOrdersInExcel = workOrdersFromExcel.Count,
+            ExistingInDatabase = existingInDb.Count,
+            MissingInDatabase = missing.Count,
+            MissingWorkOrders = missing
+        };
+    }
+
+    private static async Task LoadExistingWorkOrdersBatchAsync(
+        MySqlConnection cn,
+        List<string> batch,
+        HashSet<string> output,
+        CancellationToken cancellationToken)
+    {
+        var parameterNames = new List<string>(batch.Count);
+        using var cmd = new MySqlCommand();
+        cmd.Connection = cn;
+
+        for (var i = 0; i < batch.Count; i++)
+        {
+            var paramName = $"@p{i}";
+            parameterNames.Add(paramName);
+            cmd.Parameters.Add(paramName, MySqlDbType.VarChar).Value = batch[i];
+        }
+
+        cmd.CommandText = $@"
+            SELECT wo_number
+            FROM work_order
+            WHERE wo_number IN ({string.Join(",", parameterNames)})
+        ";
+
+        using var rd = await cmd.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken);
+        while (await rd.ReadAsync(cancellationToken))
+        {
+            output.Add(rd.GetString("wo_number"));
+        }
     }
 }

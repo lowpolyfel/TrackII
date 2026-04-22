@@ -1,0 +1,170 @@
+@{
+    ViewData["Title"] = "Excel | Purga de Work Order";
+}
+
+<div class="card work-order-purge-card">
+    <div class="page-header">
+        <div>
+            <h2>Purga de Work Order</h2>
+            <p class="subtitle">Carga un Excel y compara la <strong>columna A</strong> contra las órdenes registradas en la base de datos.</p>
+        </div>
+
+        <a href="/Admin/ExcelGenerator" class="btn btn-secondary">
+            <i class="fa-solid fa-arrow-left"></i>
+            Regresar
+        </a>
+    </div>
+
+    <form id="purgeForm" method="post" action="/Admin/ExcelGenerator/WorkOrderPurge/Analyze" enctype="multipart/form-data" class="work-order-purge-form">
+        @Html.AntiForgeryToken()
+
+        <div class="purge-upload-row">
+            <input type="file" id="excelFile" name="excelFile" class="input" accept=".xlsx" required />
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-bolt"></i>
+                Analizar archivo
+            </button>
+        </div>
+
+        <div class="purge-hint">Solo se utiliza la columna A (de arriba hacia abajo hasta el último dato).</div>
+    </form>
+
+    <div id="purgeProgress" class="purge-progress hidden" aria-live="polite">
+        <div class="purge-progress-header">
+            <strong>Procesando archivo...</strong>
+            <span id="purgeProgressLabel">0%</span>
+        </div>
+        <div class="purge-progress-bar-track">
+            <div id="purgeProgressBar" class="purge-progress-bar"></div>
+        </div>
+    </div>
+
+    <div id="purgeError" class="alert error hidden"></div>
+
+    <section id="purgeResults" class="purge-results hidden">
+        <div class="kpi-grid purge-kpis">
+            <article class="card kpi-card purge-kpi">
+                <div class="kpi-title">Filas leídas (col. A)</div>
+                <div id="kpiRowsRead" class="kpi-value">0</div>
+            </article>
+            <article class="card kpi-card purge-kpi">
+                <div class="kpi-title">WO únicas en Excel</div>
+                <div id="kpiExcelUnique" class="kpi-value">0</div>
+            </article>
+            <article class="card kpi-card purge-kpi">
+                <div class="kpi-title">WO existentes en BD</div>
+                <div id="kpiExisting" class="kpi-value">0</div>
+            </article>
+            <article class="card kpi-card purge-kpi purge-kpi-alert">
+                <div class="kpi-title">WO faltantes en BD</div>
+                <div id="kpiMissing" class="kpi-value">0</div>
+            </article>
+        </div>
+
+        <div class="table-wrapper excel-preview-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Work Order faltante en BD</th>
+                    </tr>
+                </thead>
+                <tbody id="purgeMissingBody"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+<script>
+(() => {
+    const form = document.getElementById('purgeForm');
+    const progressContainer = document.getElementById('purgeProgress');
+    const progressBar = document.getElementById('purgeProgressBar');
+    const progressLabel = document.getElementById('purgeProgressLabel');
+    const errorBox = document.getElementById('purgeError');
+    const results = document.getElementById('purgeResults');
+    const missingBody = document.getElementById('purgeMissingBody');
+
+    const setProgress = (value) => {
+        const safeValue = Math.max(0, Math.min(100, value));
+        progressBar.style.width = `${safeValue}%`;
+        progressLabel.textContent = `${safeValue}%`;
+    };
+
+    const showError = (message) => {
+        errorBox.classList.remove('hidden');
+        errorBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${message}`;
+    };
+
+    const clearError = () => {
+        errorBox.classList.add('hidden');
+        errorBox.innerHTML = '';
+    };
+
+    const setKpiValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = Number(value ?? 0).toLocaleString();
+    };
+
+    const renderMissingRows = (missingList) => {
+        missingBody.innerHTML = '';
+
+        if (!Array.isArray(missingList) || missingList.length === 0) {
+            missingBody.innerHTML = '<tr><td colspan="2" class="empty">No hay diferencias. Todas las WO del Excel existen en BD.</td></tr>';
+            return;
+        }
+
+        missingBody.innerHTML = missingList
+            .map((wo, index) => `<tr><td>${index + 1}</td><td>${wo}</td></tr>`)
+            .join('');
+    };
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        clearError();
+        results.classList.add('hidden');
+        progressContainer.classList.remove('hidden');
+        setProgress(0);
+
+        const formData = new FormData(form);
+        const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+        let progress = 0;
+        const timer = setInterval(() => {
+            progress = Math.min(progress + 6, 90);
+            setProgress(progress);
+        }, 180);
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: token ? { 'RequestVerificationToken': token } : {}
+            });
+
+            const payload = await response.json();
+            if (!response.ok) {
+                showError(payload?.error || 'No se pudo procesar el archivo.');
+                return;
+            }
+
+            setProgress(100);
+
+            setKpiValue('kpiRowsRead', payload.totalRowsRead);
+            setKpiValue('kpiExcelUnique', payload.uniqueWorkOrdersInExcel);
+            setKpiValue('kpiExisting', payload.existingInDatabase);
+            setKpiValue('kpiMissing', payload.missingInDatabase);
+            renderMissingRows(payload.missingWorkOrders);
+
+            results.classList.remove('hidden');
+        } catch (error) {
+            showError('Error inesperado al procesar el archivo. Intenta nuevamente.');
+        } finally {
+            clearInterval(timer);
+            setTimeout(() => progressContainer.classList.add('hidden'), 350);
+        }
+    });
+})();
+</script>
+}

@@ -150,6 +150,10 @@
     background: linear-gradient(135deg, #0f766e, #14b8a6);
 }
 
+.excel-generator-icon.icon-purge {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+}
+
 .stale-pill {
     display: inline-flex;
     align-items: center;
@@ -183,4 +187,73 @@
 
 .active-orders-sort-form .input {
     min-width: 270px;
+}
+
+.work-order-purge-form {
+    margin-top: 8px;
+}
+
+.purge-upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.purge-upload-row .input {
+    min-width: min(520px, 100%);
+}
+
+.purge-hint {
+    margin-top: 10px;
+    color: var(--text-muted);
+    font-size: .88rem;
+}
+
+.purge-progress {
+    margin-top: 16px;
+    border: 1px solid rgba(29, 78, 216, 0.16);
+    background: rgba(238, 244, 255, 0.8);
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.purge-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.purge-progress-bar-track {
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.24);
+    overflow: hidden;
+}
+
+.purge-progress-bar {
+    width: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2563eb, #38bdf8);
+    transition: width .25s ease;
+}
+
+.purge-results {
+    margin-top: 16px;
+}
+
+.purge-kpis .purge-kpi {
+    min-height: 128px;
+}
+
+.purge-kpi-alert .kpi-value {
+    color: #b91c1c;
+}
+
+.hidden {
+    display: none !important;
 }

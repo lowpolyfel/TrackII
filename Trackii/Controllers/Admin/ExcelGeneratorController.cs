@@ -62,4 +62,31 @@ public class ExcelGeneratorController : Controller
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             fileName);
     }
+
+    [HttpGet("WorkOrderPurge")]
+    public IActionResult WorkOrderPurge()
+    {
+        return View($"{ViewBase}WorkOrderPurge.cshtml");
+    }
+
+    [HttpPost("WorkOrderPurge/Analyze")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AnalyzeWorkOrderPurge(IFormFile? excelFile, CancellationToken cancellationToken)
+    {
+        if (excelFile is null || excelFile.Length == 0)
+        {
+            return BadRequest(new { error = "Debes subir un archivo Excel válido." });
+        }
+
+        var extension = Path.GetExtension(excelFile.FileName);
+        if (!string.Equals(extension, ".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { error = "Solo se aceptan archivos .xlsx." });
+        }
+
+        await using var stream = excelFile.OpenReadStream();
+        var result = await _service.AnalyzeWorkOrderPurgeAsync(stream, cancellationToken);
+
+        return Json(result);
+    }
 }
