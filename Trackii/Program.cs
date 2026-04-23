@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.FileProviders;
 using Trackii.Services;
 using Trackii.Services.Admin;
 using Trackii.Services.Api;
+using Trackii.Services.GerenciaLobby;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +75,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<LobbyService>();
 builder.Services.AddScoped<GerenciaService>();
+builder.Services.AddScoped<GerenciaLobbyService>();
 builder.Services.AddScoped<Trackii.Services.Reports.ReportsService>();
 builder.Services.AddScoped<Trackii.Services.Engineering.UnregisteredPartsService>();
 builder.Services.AddScoped<ViewCatalogService>();
@@ -115,6 +118,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(app.Environment.ContentRootPath, "Assets")),
+    RequestPath = "/Assets"
+});
 app.UseRouting();
 
 app.UseAuthentication();

@@ -1,59 +1,59 @@
-﻿@model Trackii.Models.LoginVm
+@model Trackii.Models.LoginVm
 @{
     ViewData["Title"] = "Login";
     Layout = "_AuthLayout";
 }
 
-<div class="auth-page">
-    <div class="auth-card">
-        <div class="auth-form">
-            <div class="auth-brand">
-                <span class="auth-logo">Tt</span>
-                <span class="auth-title">Trackii</span>
+<div class="auth-page auth-page-modern">
+    <div class="auth-card auth-card-modern">
+        <section class="auth-form auth-form-modern">
+            <div class="auth-brand auth-brand-modern">
+                <img src="~/Assets/Img/TT-logo.png" alt="TT Electronics" class="auth-brand-logo" />
+                <span class="auth-title">TTelectronics</span>
             </div>
 
-            <div class="auth-avatar">
-                <i class="fa-solid fa-user"></i>
+            <div class="auth-avatar auth-avatar-modern">
+                <i class="fa-regular fa-user"></i>
             </div>
 
-            <form method="post" asp-action="Login" class="auth-fields">
+            <form method="post" asp-action="Login" class="auth-fields auth-fields-modern">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="ReturnUrl" />
 
-                <div class="auth-field">
-                    <label asp-for="Username" class="auth-label"></label>
-                    <input asp-for="Username" class="auth-input" autocomplete="username" />
-                    <span asp-validation-for="Username" class="auth-error"></span>
+                <div class="auth-pill-field">
+                    <i class="fa-regular fa-user"></i>
+                    <input asp-for="Username" class="auth-input auth-input-pill" placeholder="USERNAME" autocomplete="username" />
                 </div>
+                <span asp-validation-for="Username" class="auth-error"></span>
 
-                <div class="auth-field">
-                    <label asp-for="Password" class="auth-label"></label>
-                    <input asp-for="Password" class="auth-input" autocomplete="current-password" />
-                    <span asp-validation-for="Password" class="auth-error"></span>
+                <div class="auth-pill-field">
+                    <i class="fa-solid fa-lock"></i>
+                    <input asp-for="Password" class="auth-input auth-input-pill" placeholder="PASSWORD" autocomplete="current-password" />
                 </div>
+                <span asp-validation-for="Password" class="auth-error"></span>
 
-                <div class="auth-meta">
+                <button type="submit" class="auth-button auth-button-pill">Login</button>
+
+                <div class="auth-meta auth-meta-modern">
                     <label class="auth-remember">
                         <input asp-for="RememberMe" />
                         <span>@Html.DisplayNameFor(m => m.RememberMe)</span>
                     </label>
                 </div>
 
-                <div class="auth-error">
+                <div class="auth-error auth-error-summary">
                     @Html.ValidationSummary(false)
                 </div>
-
-                <button type="submit" class="auth-button">Login</button>
             </form>
-        </div>
 
-        <div class="auth-welcome">
-            <div class="auth-welcome-overlay"></div>
-            <div class="auth-welcome-content">
-                <h2>Welcome.</h2>
-                <p>Gestión y trazabilidad en tiempo real.</p>
+            <div class="auth-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        </section>
+
+        <section class="auth-welcome auth-welcome-modern" aria-hidden="true">
+            <div class="auth-welcome-content auth-welcome-content-modern">
+                <h2>Bienvenido.</h2>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 
