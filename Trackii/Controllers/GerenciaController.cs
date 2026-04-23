@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Trackii.Services;
+using Trackii.Services.GerenciaLobby;
 
 namespace Trackii.Controllers;
 
@@ -9,17 +10,26 @@ namespace Trackii.Controllers;
 public class GerenciaController : Controller
 {
     private readonly GerenciaService _svc;
+    private readonly GerenciaLobbyService _lobbyService;
     private const string ViewBase = "~/Views/Gerencia/";
 
-    public GerenciaController(GerenciaService svc)
+    public GerenciaController(GerenciaService svc, GerenciaLobbyService lobbyService)
     {
         _svc = svc;
+        _lobbyService = lobbyService;
     }
 
     [HttpGet("")]
     public IActionResult Index()
     {
-        return RedirectToAction(nameof(BackendLobby));
+        return RedirectToAction(nameof(Lobby));
+    }
+
+    [HttpGet("Lobby")]
+    public IActionResult Lobby()
+    {
+        var vm = _lobbyService.BuildLobby();
+        return View($"{ViewBase}Lobby.cshtml", vm);
     }
 
     [HttpGet("MapaDiscretos")]

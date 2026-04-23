@@ -1,0 +1,15 @@
+@model Trackii.Models.GerenciaLobby.GerenciaLobbyVm
+@{
+    ViewData["Title"] = "Gerencia";
+}
+
+<section class="gerencia-lobby">
+    <partial name="~/Views/Gerencia/Components/_GerenciaLobbyHero.cshtml" model="Model" />
+
+    <div class="gerencia-lobby-grid">
+        @foreach (var section in Model.Sections)
+        {
+            <partial name="~/Views/Gerencia/Components/_GerenciaLobbySection.cshtml" model="section" />
+        }
+    </div>
+</section>
