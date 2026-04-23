@@ -129,6 +129,8 @@ public class ExcelGeneratorService
         var usedRange = sheet.Range(1, 1, Math.Max(1, currentRow - 1), headers.Count);
         var table = usedRange.CreateTable("RutasTable");
         table.Theme = XLTableTheme.TableStyleMedium2;
+        table.ShowAutoFilter = true;
+        usedRange.SetAutoFilter();
 
         sheet.Row(1).Style.Font.Bold = true;
         sheet.SheetView.FreezeRows(1);
@@ -178,6 +180,8 @@ public class ExcelGeneratorService
         var usedRange = sheet.Range(1, 1, Math.Max(1, currentRow - 1), headers.Length);
         var table = usedRange.CreateTable("OrdenesActivasTable");
         table.Theme = XLTableTheme.TableStyleMedium9;
+        table.ShowAutoFilter = true;
+        usedRange.SetAutoFilter();
 
         sheet.Row(1).Style.Font.Bold = true;
         sheet.Row(1).Style.Font.FontColor = XLColor.White;
@@ -245,6 +249,8 @@ public class ExcelGeneratorService
         var usedRange = sheet.Range(1, 1, Math.Max(1, currentRow - 1), headers.Length);
         var table = usedRange.CreateTable("InventarioLogTable");
         table.Theme = XLTableTheme.TableStyleMedium15;
+        table.ShowAutoFilter = true;
+        usedRange.SetAutoFilter();
 
         sheet.Row(1).Style.Font.Bold = true;
         sheet.Row(1).Style.Font.FontColor = XLColor.White;
