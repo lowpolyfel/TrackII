@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Trackii.Services;
 using Trackii.Services.Admin;
 using Trackii.Services.Api;
+using Trackii.Services.GerenciaLobby;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +74,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<LobbyService>();
 builder.Services.AddScoped<GerenciaService>();
+builder.Services.AddScoped<GerenciaLobbyService>();
 builder.Services.AddScoped<Trackii.Services.Reports.ReportsService>();
 builder.Services.AddScoped<Trackii.Services.Engineering.UnregisteredPartsService>();
 builder.Services.AddScoped<ViewCatalogService>();
