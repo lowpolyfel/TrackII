@@ -8,7 +8,7 @@
     <div class="auth-card auth-card-modern">
         <section class="auth-form auth-form-modern">
             <div class="auth-brand auth-brand-modern">
-                <img src="~/Assets/img/TT-logo.png" alt="TT Electronics" class="auth-brand-logo" />
+                <img src="~/Assets/Img/TT-logo.png" alt="TT Electronics" class="auth-brand-logo" />
                 <span class="auth-title">TTelectronics</span>
             </div>
 
@@ -42,7 +42,7 @@
                     <span class="auth-hint">Forgot your password?</span>
                 </div>
 
-                <div class="auth-error">
+                <div class="auth-error auth-error-summary">
                     @Html.ValidationSummary(false)
                 </div>
             </form>
@@ -50,7 +50,7 @@
             <div class="auth-dots" aria-hidden="true"><span></span><span></span><span></span></div>
         </section>
 
-        <section class="auth-welcome auth-welcome-modern">
+        <section class="auth-welcome auth-welcome-modern" aria-hidden="true">
             <div class="auth-welcome-content auth-welcome-content-modern">
                 <h2>Bienvenido.</h2>
             </div>
