@@ -269,16 +269,13 @@ public class GerenciaService
             OrdersOpenedFromDate = null
         };
 
-        var orderedColumns = new[]
+        string[] orderedColumns =
         {
-            "LATERAL LED",
-            "LATERAL SENSOR",
+            "MINI AXIALES",
+            "FOTOLOGICOS",
             "OPB LATERAL",
-            "MINI AXIAL",
-            "OPB MINIAXIAL",
-            "MAXI AXIAL",
-            "FOTOLOGICO",
-            "OPB FOTO"
+            "LATERAL SENSOR SIN OPB",
+            "OTROS"
         };
 
         var orderedLocations = new[]
@@ -328,15 +325,11 @@ public class GerenciaService
                     ELSE NULL
                 END AS normalized_location,
                 CASE
-                    WHEN UPPER(COALESCE(sf.name, '')) LIKE '%LATERAL%OPB%' THEN 'OPB LATERAL'
-                    WHEN UPPER(COALESCE(sf.name, '')) LIKE '%MINI%OPB%' THEN 'OPB MINIAXIAL'
-                    WHEN UPPER(COALESCE(sf.name, '')) LIKE '%PHOTO OPB%' OR UPPER(COALESCE(sf.name, '')) LIKE '%PHOTO OPBS%' THEN 'OPB FOTO'
-                    WHEN UPPER(COALESCE(f.name, '')) LIKE '%LATERAL%LED%' THEN 'LATERAL LED'
-                    WHEN UPPER(COALESCE(f.name, '')) LIKE '%LATERAL%SENSOR%' THEN 'LATERAL SENSOR'
-                    WHEN UPPER(COALESCE(f.name, '')) LIKE '%MINI%' THEN 'MINI AXIAL'
-                    WHEN UPPER(COALESCE(f.name, '')) LIKE '%MAXI%' THEN 'MAXI AXIAL'
-                    WHEN UPPER(COALESCE(f.name, '')) LIKE '%FOTO%' THEN 'FOTOLOGICO'
-                    ELSE NULL
+                    WHEN UPPER(f.name) = 'MINI AXIALES' THEN 'MINI AXIALES'
+                    WHEN UPPER(f.name) = 'FOTOLOGICOS' THEN 'FOTOLOGICOS'
+                    WHEN UPPER(f.name) = 'LATERAL SENSOR' AND UPPER(sf.name) LIKE '%OPB%' THEN 'OPB LATERAL'
+                    WHEN UPPER(f.name) = 'LATERAL SENSOR' AND UPPER(sf.name) NOT LIKE '%OPB%' THEN 'LATERAL SENSOR SIN OPB'
+                    ELSE 'OTROS'
                 END AS inventory_column,
                 COALESCE(SUM(COALESCE(last_qty.qty_in, 0)), 0) AS qty
             FROM wip_item wip
@@ -485,6 +478,8 @@ public class GerenciaService
     private static string NormalizeFamilyAlias(string baseFamily)
     {
         var normalized = baseFamily.Trim().ToUpperInvariant();
+        if (normalized is "LATERAL" or "LATERAL SENSOR SIN OPB")
+            return "LATERAL SENSOR";
         if (normalized is "MINI AXIAL" or "MINI AXIALES" or "MINIAXIAL")
             return "MINI AXIALES";
         if (normalized is "MAXI AXIAL" or "MAXI AXIALES")
