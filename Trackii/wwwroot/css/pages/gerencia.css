@@ -735,3 +735,52 @@
     font-weight: 700;
     color: #0a57b2;
 }
+
+
+.gerencia-lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.gerencia-lobby-hero,
+.gerencia-lobby-card {
+    background: #fff;
+    border: 1px solid rgba(23, 88, 177, 0.12);
+    border-radius: 16px;
+    padding: 18px;
+}
+
+.gerencia-lobby-kicker {
+    margin: 0;
+    font-size: .8rem;
+    text-transform: uppercase;
+    color: #325f9f;
+    font-weight: 700;
+}
+
+.gerencia-lobby-hero h2 {
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+.gerencia-lobby-hero p {
+    margin: 0;
+    color: #445979;
+}
+
+.gerencia-lobby-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.gerencia-lobby-card h3 {
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.gerencia-lobby-card p {
+    margin: 0;
+    color: #516887;
+}
