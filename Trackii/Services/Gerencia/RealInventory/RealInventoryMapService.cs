@@ -50,7 +50,7 @@ public class RealInventoryMapService
 
         using var cmd = new MySqlCommand($@"
             SELECT
-                {BuildNormalizedLocationSql("l")} AS normalized_location,
+                {BuildInventoryLocationSql()} AS normalized_location,
                 {BuildFamilyGroupSql()} AS family_group,
                 COALESCE(SUM(COALESCE(last_qty.qty_in, 0)), 0) AS qty
             FROM wip_item wip
@@ -60,6 +60,10 @@ public class RealInventoryMapService
             JOIN family f ON f.id = sf.id_family
             LEFT JOIN route_step rs ON rs.id = wip.current_step_id
             LEFT JOIN location l ON l.id = rs.location_id
+            LEFT JOIN route_step next_rs
+                ON next_rs.route_id = rs.route_id
+               AND next_rs.step_number = rs.step_number + 1
+            LEFT JOIN location next_l ON next_l.id = next_rs.location_id
             LEFT JOIN (
                 SELECT wse.wip_item_id, wse.qty_in
                 FROM wip_step_execution wse
@@ -132,7 +136,7 @@ public class RealInventoryMapService
                     p.part_number,
                     COALESCE(f.name, 'Sin familia') AS family_name,
                     COALESCE(sf.name, 'Sin subfamilia') AS subfamily_name,
-                    {BuildNormalizedLocationSql("l")} AS normalized_location,
+                    {BuildInventoryLocationSql()} AS normalized_location,
                     {BuildFamilyGroupSql()} AS family_group,
                     COALESCE(last_qty.qty_in, 0) AS current_qty,
                     wo.status AS wo_status,
@@ -145,6 +149,10 @@ public class RealInventoryMapService
                 JOIN family f ON f.id = sf.id_family
                 LEFT JOIN route_step rs ON rs.id = wip.current_step_id
                 LEFT JOIN location l ON l.id = rs.location_id
+                LEFT JOIN route_step next_rs
+                    ON next_rs.route_id = rs.route_id
+                   AND next_rs.step_number = rs.step_number + 1
+                LEFT JOIN location next_l ON next_l.id = next_rs.location_id
                 LEFT JOIN (
                     SELECT wse.wip_item_id, wse.qty_in, wse.create_at AS last_movement_at
                     FROM wip_step_execution wse
@@ -185,6 +193,23 @@ public class RealInventoryMapService
         }
 
         return vm;
+    }
+
+    private static string BuildInventoryLocationSql()
+    {
+        return $@"
+            CASE
+                WHEN (
+                        COALESCE(l.name, '') LIKE '%Emp%'
+                     )
+                     AND (
+                        COALESCE(next_l.name, '') LIKE '%QC%'
+                        OR COALESCE(next_l.name, '') LIKE '%Q.C.%'
+                        OR COALESCE(next_l.name, '') LIKE '%Calidad%'
+                     )
+                THEN 'QC'
+                ELSE {BuildNormalizedLocationSql("l")}
+            END";
     }
 
     private static string BuildNormalizedLocationSql(string locationAlias)
