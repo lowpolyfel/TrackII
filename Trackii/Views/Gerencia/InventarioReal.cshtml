@@ -20,17 +20,6 @@
     </div>
 
     <section class="card apple-card real-inventory-card">
-        <div class="real-inventory-toolbar">
-            <label class="real-inventory-search">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="search" id="inventorySearch" placeholder="Filtrar localidad..." autocomplete="off" />
-            </label>
-            <label class="real-inventory-toggle">
-                <input type="checkbox" id="hideEmptyRows" />
-                Ocultar filas en cero
-            </label>
-        </div>
-
         <div class="table-wrapper real-inventory-table-wrapper">
             <table class="table real-inventory-table" id="inventoryRealTable">
                 <thead>
@@ -104,32 +93,37 @@
         outline: 2px solid currentColor;
         font-weight: 600;
     }
+    @media (max-width: 1024px) {
+        .real-inventory-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .real-inventory-table {
+            min-width: 980px;
+        }
+    }
+
+    @media (max-width: 768px) and (orientation: portrait) {
+        .real-inventory-table {
+            min-width: 1100px;
+            font-size: 0.82rem;
+        }
+    }
+
+    @media (max-width: 932px) and (orientation: landscape) {
+        .real-inventory-table {
+            min-width: 980px;
+            font-size: 0.82rem;
+        }
+    }
 </style>
 
 @section Scripts {
     <script>
         (() => {
             const table = document.getElementById('inventoryRealTable');
-            const searchInput = document.getElementById('inventorySearch');
-            const hideEmptyRows = document.getElementById('hideEmptyRows');
-            if (!table || !searchInput || !hideEmptyRows) return;
-
-            const rows = Array.from(table.querySelectorAll('tbody tr'));
-            const applyFilters = () => {
-                const term = searchInput.value.trim().toLowerCase();
-                const hideZero = hideEmptyRows.checked;
-
-                rows.forEach(row => {
-                    const location = (row.dataset.location || '').toLowerCase();
-                    const total = Number(row.dataset.total || 0);
-                    const matchSearch = !term || location.includes(term);
-                    const matchZero = !hideZero || total > 0;
-                    row.style.display = matchSearch && matchZero ? '' : 'none';
-                });
-            };
-
-            searchInput.addEventListener('input', applyFilters);
-            hideEmptyRows.addEventListener('change', applyFilters);
+            if (!table) return;
 
             const dayLinks = Array.from(document.querySelectorAll('.days-cell-link'));
             const clearDayComparison = () => {
@@ -161,7 +155,6 @@
                         const matchesLocation = locations.includes(rowLocation);
                         if (!matchesLocation) return;
 
-                        if (dayClass) row.classList.add(dayClass);
                         const cells = Array.from(row.querySelectorAll('td[data-family]'));
                         cells.forEach(cell => {
                             if ((cell.dataset.family || '').toLowerCase() === family.toLowerCase()) {

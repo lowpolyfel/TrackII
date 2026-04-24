@@ -51,7 +51,7 @@
                             <td class="text-end @dayClass @(qty.HasValue && qty.Value == 0 ? "is-zero" : string.Empty)">
                                 @if (!qty.HasValue || locations is null)
                                 {
-                                    <span>&nbsp;</span>
+                                    <span>-</span>
                                 }
                                 else
                                 {
