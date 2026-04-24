@@ -4,10 +4,6 @@
     <div class="card-heading">
         <h3>Inventario por días operativos</h3>
     </div>
-    <p class="subtitle mb-3">
-        Los días son buckets operativos, no fechas ni días calendario. Las cantidades se agrupan desde el mapa de inventario por localidad.
-    </p>
-    <p class="subtitle mb-3"><strong>El total de este mapa excluye Almacen visual.</strong></p>
 
     @if (Model.ValidationWarnings.Any())
     {
@@ -26,48 +22,63 @@
         <table class="table real-inventory-table">
             <thead>
                 <tr>
-                    <th>Familia/Subfamilia</th>
-                    @foreach (var day in Model.DayColumns)
+                    <th>Día operativo</th>
+                    @foreach (var family in Model.Rows.Select(x => x.FamilyGroup))
                     {
-                        <th class="text-end">@day</th>
+                        <th class="text-end">@family</th>
                     }
                     <th class="text-end total-column">Total</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var row in Model.Rows)
+                @for (var i = 0; i < Model.DayColumns.Count; i++)
                 {
+                    var day = Model.DayColumns[i];
+                    var dayClass = $"day-color-{i + 1}";
+                    var dayTotal = 0;
+
                     <tr>
-                        <td class="location-cell">@row.FamilyGroup</td>
-                        @foreach (var day in Model.DayColumns)
+                        <td class="location-cell @dayClass">@day</td>
+                        @foreach (var familyRow in Model.Rows)
                         {
-                            row.PiecesByDay.TryGetValue(day, out var qty);
-                            <td class="text-end @(qty.HasValue && qty.Value == 0 ? "is-zero" : string.Empty)">
-                                @if (!qty.HasValue)
+                            familyRow.PiecesByDay.TryGetValue(day, out var qty);
+                            familyRow.LocationsByDay.TryGetValue(day, out var locations);
+                            if (qty.HasValue)
+                            {
+                                dayTotal += qty.Value;
+                            }
+
+                            <td class="text-end @dayClass @(qty.HasValue && qty.Value == 0 ? "is-zero" : string.Empty)">
+                                @if (!qty.HasValue || locations is null)
                                 {
                                     <span>&nbsp;</span>
                                 }
-                                else if (qty.Value == 0)
-                                {
-                                    <span>0</span>
-                                }
                                 else
                                 {
-                                    <span>@qty.Value.ToString("N0")</span>
+                                    var locs = string.Join(",", locations);
+                                    <button type="button"
+                                            class="btn btn-link p-0 inventory-link days-cell-link"
+                                            data-day="@day"
+                                            data-family="@familyRow.FamilyGroup"
+                                            data-locations="@locs">
+                                        @qty.Value.ToString("N0")
+                                    </button>
                                 }
                             </td>
                         }
-                        <td class="text-end total-column">@row.TotalPieces.ToString("N0")</td>
+                        <td class="text-end total-column @dayClass">@dayTotal.ToString("N0")</td>
                     </tr>
                 }
             </tbody>
             <tfoot>
                 <tr>
                     <th>TOTAL GENERAL</th>
-                    @foreach (var day in Model.DayColumns)
+                    @foreach (var family in Model.Rows.Select(x => x.FamilyGroup))
                     {
-                        var totalByDay = Model.TotalsByDay.TryGetValue(day, out var total) ? total : 0;
-                        <th class="text-end">@totalByDay.ToString("N0")</th>
+                        var totalByFamily = Model.Rows
+                            .First(x => x.FamilyGroup.Equals(family, StringComparison.OrdinalIgnoreCase))
+                            .TotalPieces;
+                        <th class="text-end">@totalByFamily.ToString("N0")</th>
                     }
                     <th class="text-end total-column">@Model.GrandTotalPieces.ToString("N0")</th>
                 </tr>

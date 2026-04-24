@@ -22,6 +22,7 @@ public class RealInventoryDayFamilyRowVm
     // int? porque null significa blanco/no aplica.
     // 0 significa que sí aplica, pero no hay piezas.
     public Dictionary<string, int?> PiecesByDay { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, List<string>?> LocationsByDay { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public int TotalPieces => PiecesByDay.Values.Where(x => x.HasValue).Sum(x => x!.Value);
 }

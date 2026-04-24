@@ -108,6 +108,7 @@ public class RealInventoryDaysMapService
                 if (dayRule is null || !dayRule.TryGetValue(day, out var locations) || locations is null)
                 {
                     row.PiecesByDay[day] = null;
+                    row.LocationsByDay[day] = null;
                     continue;
                 }
 
@@ -115,6 +116,7 @@ public class RealInventoryDaysMapService
                     .Where(r => locations.Contains(r.LocationName, StringComparer.OrdinalIgnoreCase))
                     .Sum(r => r.PiecesByColumn.TryGetValue(familyGroup, out var value) ? value : 0);
                 row.PiecesByDay[day] = qty;
+                row.LocationsByDay[day] = locations.ToList();
             }
 
             vm.Rows.Add(row);
