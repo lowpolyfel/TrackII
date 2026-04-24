@@ -50,7 +50,7 @@ public class RealInventoryMapService
 
         using var cmd = new MySqlCommand($@"
             SELECT
-                {BuildDestinationLocationSql("destination_l")} AS normalized_location,
+                {BuildDestinationLocationSql("next_rs", "destination_l", "executed_l")} AS normalized_location,
                 {BuildFamilyGroupSql()} AS family_group,
                 COALESCE(SUM(COALESCE(last_qty.qty_in, 0)), 0) AS qty
             FROM wip_item wip
@@ -68,13 +68,25 @@ public class RealInventoryMapService
                 ) latest ON latest.max_wse_id = wse.id
             ) last_qty ON last_qty.wip_item_id = wip.id
             LEFT JOIN route_step executed_rs ON executed_rs.id = last_qty.route_step_id
+            LEFT JOIN location executed_l ON executed_l.id = executed_rs.location_id
             LEFT JOIN route_step next_rs
                 ON next_rs.route_id = executed_rs.route_id
                AND next_rs.step_number = executed_rs.step_number + 1
             LEFT JOIN location destination_l ON destination_l.id = next_rs.location_id
             WHERE wo.active = 1
-              AND wo.status IN ('OPEN', 'IN_PROGRESS', 'HOLD')
-              AND wip.status = 'ACTIVE'
+              AND (
+                    (
+                        wo.status IN ('OPEN', 'IN_PROGRESS', 'HOLD')
+                        AND wip.status = 'ACTIVE'
+                    )
+                    OR
+                    (
+                        wo.status IN ('OPEN', 'IN_PROGRESS', 'HOLD', 'FINISHED')
+                        AND wip.status = 'FINISHED'
+                        AND next_rs.id IS NULL
+                        AND {BuildIsQcLocationSql("executed_l")}
+                    )
+                )
             GROUP BY normalized_location, family_group", cn);
 
         using var rd = cmd.ExecuteReader();
@@ -135,7 +147,7 @@ public class RealInventoryMapService
                     p.part_number,
                     COALESCE(f.name, 'Sin familia') AS family_name,
                     COALESCE(sf.name, 'Sin subfamilia') AS subfamily_name,
-                    {BuildDestinationLocationSql("destination_l")} AS normalized_location,
+                    {BuildDestinationLocationSql("next_rs", "destination_l", "executed_l")} AS normalized_location,
                     {BuildFamilyGroupSql()} AS family_group,
                     COALESCE(last_qty.qty_in, 0) AS current_qty,
                     wo.status AS wo_status,
@@ -156,13 +168,25 @@ public class RealInventoryMapService
                     ) latest ON latest.max_wse_id = wse.id
                 ) last_qty ON last_qty.wip_item_id = wip.id
                 LEFT JOIN route_step executed_rs ON executed_rs.id = last_qty.route_step_id
+                LEFT JOIN location executed_l ON executed_l.id = executed_rs.location_id
                 LEFT JOIN route_step next_rs
                     ON next_rs.route_id = executed_rs.route_id
                    AND next_rs.step_number = executed_rs.step_number + 1
                 LEFT JOIN location destination_l ON destination_l.id = next_rs.location_id
                 WHERE wo.active = 1
-                  AND wo.status IN ('OPEN', 'IN_PROGRESS', 'HOLD')
-                  AND wip.status = 'ACTIVE'
+                  AND (
+                        (
+                            wo.status IN ('OPEN', 'IN_PROGRESS', 'HOLD')
+                            AND wip.status = 'ACTIVE'
+                        )
+                        OR
+                        (
+                            wo.status IN ('OPEN', 'IN_PROGRESS', 'HOLD', 'FINISHED')
+                            AND wip.status = 'FINISHED'
+                            AND next_rs.id IS NULL
+                            AND {BuildIsQcLocationSql("executed_l")}
+                        )
+                    )
             ) q
             WHERE q.normalized_location = @location
               AND q.family_group = @familyGroup
@@ -193,13 +217,23 @@ public class RealInventoryMapService
         return vm;
     }
 
-    private static string BuildDestinationLocationSql(string locationAlias)
+    private static string BuildDestinationLocationSql(string nextRouteStepAlias, string destinationLocationAlias, string executedLocationAlias)
     {
         return $@"
             CASE
-                WHEN {locationAlias}.id IS NULL THEN 'Almacen'
-                ELSE {BuildNormalizedLocationSql(locationAlias, "NULL")}
+                WHEN {nextRouteStepAlias}.id IS NOT NULL THEN {BuildNormalizedLocationSql(destinationLocationAlias, "NULL")}
+                WHEN {nextRouteStepAlias}.id IS NULL AND {BuildIsQcLocationSql(executedLocationAlias)} THEN 'Almacen'
+                ELSE NULL
             END";
+    }
+
+    private static string BuildIsQcLocationSql(string locationAlias)
+    {
+        return $@"(
+            COALESCE({locationAlias}.name, '') LIKE '%QC%'
+            OR COALESCE({locationAlias}.name, '') LIKE '%Q.C.%'
+            OR COALESCE({locationAlias}.name, '') LIKE '%Calidad%'
+        )";
     }
 
     private static string BuildNormalizedLocationSql(string locationAlias, string elseValue = "'Almacen'")

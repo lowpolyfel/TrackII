@@ -7,7 +7,7 @@
     <div class="page-header error-causes-header">
         <div>
             <h2>@Model.Location · @Model.FamilyGroup</h2>
-            <p class="subtitle">Detalle por WO en la localidad actual (sin proyección a siguiente operación).</p>
+            <p class="subtitle">Detalle por WO en la localidad destino según la última salida registrada.</p>
         </div>
         <a asp-action="InventarioReal" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver a inventario real</a>
     </div>
@@ -16,7 +16,7 @@
         <article class="kpi-highlight apple-card error-kpi-card">
             <span class="kpi-label">Órdenes</span>
             <strong class="kpi-value">@Model.Orders.Count.ToString("N0")</strong>
-            <small>Total de WIP activos.</small>
+            <small>Total de órdenes en la combinación seleccionada.</small>
         </article>
         <article class="kpi-highlight apple-card error-kpi-card">
             <span class="kpi-label">Piezas</span>
@@ -38,7 +38,7 @@
                         <th>Producto</th>
                         <th>Familia</th>
                         <th>Subfamilia</th>
-                        <th>Localidad actual</th>
+                        <th>Localidad destino</th>
                         <th>Cantidad</th>
                         <th>Status WO</th>
                         <th>Status WIP</th>
