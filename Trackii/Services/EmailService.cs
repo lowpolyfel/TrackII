@@ -1,7 +1,6 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.Options;
-using MimeKit;
+using System.Net;
+using System.Net.Mail;
 using Trackii.Models;
 
 namespace Trackii.Services;
@@ -17,18 +16,21 @@ public class EmailService
 
     public async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
-        message.To.Add(new MailboxAddress("", toEmail));
-        message.Subject = subject;
+        using var message = new MailMessage
+        {
+            From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
+            Subject = subject,
+            Body = htmlBody,
+            IsBodyHtml = true
+        };
+        message.To.Add(toEmail);
 
-        var bodyBuilder = new BodyBuilder { HtmlBody = htmlBody };
-        message.Body = bodyBuilder.ToMessageBody();
+        using var smtp = new SmtpClient(_emailSettings.SmtpServer, _emailSettings.Port)
+        {
+            Credentials = new NetworkCredential(_emailSettings.Username, _emailSettings.Password),
+            EnableSsl = true
+        };
 
-        using var client = new SmtpClient();
-        await client.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.Port, SecureSocketOptions.StartTls);
-        await client.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
-        await client.SendAsync(message);
-        await client.DisconnectAsync(true);
+        await smtp.SendMailAsync(message);
     }
 }
