@@ -242,7 +242,15 @@ public class RealInventoryMapService
                 COALESCE(MAX(wip.status), 'N/A') AS wip_status,
                 MIN(wse.create_at) AS first_step_at,
                 MAX(wse.create_at) AS last_step_at,
-                COALESCE(SUM(wse.qty_in), 0) AS total_qty_in,
+                COALESCE((
+                    SELECT wse_first.qty_in
+                    FROM wip_step_execution wse_first
+                    JOIN wip_item wip_first ON wip_first.id = wse_first.wip_item_id
+                    JOIN work_order wo_first ON wo_first.id = wip_first.wo_order_id
+                    WHERE wo_first.wo_number = @wo
+                    ORDER BY wse_first.create_at ASC, wse_first.id ASC
+                    LIMIT 1
+                ), 0) AS total_qty_in,
                 COALESCE(SUM(wse.qty_scrap), 0) AS total_qty_scrap
             FROM work_order wo
             JOIN product p ON p.id = wo.product_id
