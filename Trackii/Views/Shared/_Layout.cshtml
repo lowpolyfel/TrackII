@@ -73,6 +73,26 @@
                         <span>INVENTARIO REAL</span>
                     </a>
 
+                    <a asp-controller="Gerencia" asp-action="OrderSearch" class="@(currentController == "Gerencia" && currentAction == "OrderSearch" ? "active" : string.Empty)">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        <span>Buscador órdenes</span>
+                    </a>
+
+                    <a asp-controller="Gerencia" asp-action="ActiveOrders" class="@(currentController == "Gerencia" && currentAction == "ActiveOrders" ? "active" : string.Empty)">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Órdenes activas</span>
+                    </a>
+
+                    <a asp-controller="Gerencia" asp-action="ErrorCauses" class="@(currentController == "Gerencia" && currentAction == "ErrorCauses" ? "active" : string.Empty)">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Causas de errores</span>
+                    </a>
+
+                    <a asp-controller="Gerencia" asp-action="DiscreteMap" class="@(currentController == "Gerencia" && currentAction == "DiscreteMap" ? "active" : string.Empty)">
+                        <i class="fa-solid fa-chart-column"></i>
+                        <span>Scrap por periodo</span>
+                    </a>
+
                     @if (showGerenciaAlternateModules)
                     {
                         <a asp-controller="Gerencia" asp-action="DiscreteMap" class="@(currentController == "Gerencia" && currentAction == "DiscreteMap" ? "active" : string.Empty)">
@@ -91,19 +111,6 @@
                         <a asp-controller="Gerencia" asp-action="DiscreteDailyPanels" class="@(currentController == "Gerencia" && currentAction == "DiscreteDailyPanels" ? "active" : string.Empty)">
                             <i class="fa-solid fa-table-cells-large"></i>
                             <span>Paneles diarios discretos</span>
-                        </a>
-                    }
-
-                    @if (showGerenciaAlternateModules)
-                    {
-                        <a asp-controller="Gerencia" asp-action="ActiveOrders" class="@(currentController == "Gerencia" && currentAction == "ActiveOrders" ? "active" : string.Empty)">
-                            <i class="fa-solid fa-list-check"></i>
-                            <span>Órdenes activas</span>
-                        </a>
-
-                        <a asp-controller="Gerencia" asp-action="ErrorCauses" class="@(currentController == "Gerencia" && currentAction == "ErrorCauses" ? "active" : string.Empty)">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>Causas de errores</span>
                         </a>
                     }
 

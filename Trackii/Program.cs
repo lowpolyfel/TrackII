@@ -9,6 +9,7 @@ using Trackii.Services;
 using Trackii.Services.Admin;
 using Trackii.Services.Api;
 using Trackii.Services.GerenciaLobby;
+using Trackii.Services.Gerencia.RealInventory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,6 +78,12 @@ builder.Services.AddScoped<LobbyService>();
 builder.Services.AddScoped<GerenciaService>();
 builder.Services.AddScoped<InventoryMapService>();
 builder.Services.AddScoped<ProjectedInventoryService>();
+builder.Services.AddScoped<RealInventoryMapService>();
+builder.Services.AddScoped<RealInventoryDaysMapService>();
+builder.Services.AddScoped<RealInventoryDiscreteExcelService>();
+builder.Services.AddScoped<RealInventoryOrderSearchService>();
+builder.Services.Configure<Trackii.Models.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<GerenciaLobbyService>();
 builder.Services.AddScoped<Trackii.Services.Reports.ReportsService>();
 builder.Services.AddScoped<Trackii.Services.Engineering.UnregisteredPartsService>();
@@ -120,11 +127,21 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseStaticFiles(new StaticFileOptions
+
+var assetsPath = Path.Combine(app.Environment.ContentRootPath, "Assets");
+if (Directory.Exists(assetsPath))
 {
-    FileProvider = new PhysicalFileProvider(Path.Combine(app.Environment.ContentRootPath, "Assets")),
-    RequestPath = "/Assets"
-});
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(assetsPath),
+        RequestPath = "/Assets"
+    });
+}
+else
+{
+    Console.WriteLine($"[WARN] Assets directory not found. Skipping static file mapping: {assetsPath}");
+}
+
 app.UseRouting();
 
 app.UseAuthentication();
