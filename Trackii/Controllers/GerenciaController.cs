@@ -13,16 +13,19 @@ public class GerenciaController : Controller
     private readonly GerenciaService _svc;
     private readonly RealInventoryMapService _realInventoryMapService;
     private readonly RealInventoryDaysMapService _realInventoryDaysMapService;
+    private readonly RealInventoryOrderSearchService _realInventoryOrderSearchService;
     private const string ViewBase = "~/Views/Gerencia/";
 
     public GerenciaController(
         GerenciaService svc,
         RealInventoryMapService realInventoryMapService,
-        RealInventoryDaysMapService realInventoryDaysMapService)
+        RealInventoryDaysMapService realInventoryDaysMapService,
+        RealInventoryOrderSearchService realInventoryOrderSearchService)
     {
         _svc = svc;
         _realInventoryMapService = realInventoryMapService;
         _realInventoryDaysMapService = realInventoryDaysMapService;
+        _realInventoryOrderSearchService = realInventoryOrderSearchService;
     }
 
     [HttpGet("")]
@@ -115,6 +118,13 @@ public class GerenciaController : Controller
     {
         var vm = _realInventoryMapService.GetWorkOrderDetail(woNumber, location, familyGroup);
         return View($"{ViewBase}InventarioRealWoDetalle.cshtml", vm);
+    }
+
+    [HttpGet("BuscadorOrdenes")]
+    public IActionResult OrderSearch(string? woNumber, string? product, int page = 1)
+    {
+        var vm = _realInventoryOrderSearchService.Search(woNumber, product, page);
+        return View($"{ViewBase}OrderSearch.cshtml", vm);
     }
 
     [HttpGet("MapaDiscretos")]
